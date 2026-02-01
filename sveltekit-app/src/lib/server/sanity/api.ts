@@ -1,4 +1,4 @@
-import { SANITY_API_READ_TOKEN } from '$env/static/private';
-import { assertEnvVar } from '$lib/sanity/api';
+import { env } from '$env/dynamic/private';
 
-export const token = assertEnvVar(SANITY_API_READ_TOKEN, 'SANITY_API_READ_TOKEN');
+export const token = env.SANITY_API_READ_TOKEN;
+export const writeToken = env.SANITY_API_WRITE_TOKEN;

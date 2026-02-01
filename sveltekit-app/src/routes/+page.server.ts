@@ -1,15 +1,22 @@
-import { postsQuery as query, type Post } from '$lib/sanity/queries';
+import { sandwichesQuery, drinksQuery } from '$lib/sanity/queries';
+import type { Sandwich, Drink } from '$lib/types/sanity';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
 	const { loadQuery } = event.locals;
-	const initial = await loadQuery<Post[]>(query);
+	
+	const [sandwichesResult, drinksResult] = await Promise.all([
+		loadQuery<Sandwich[]>(sandwichesQuery),
+		loadQuery<Drink[]>(drinksQuery)
+	]);
 
-	// We pass the data in a format that is easy for `useQuery` to consume in the
-	// corresponding `+page.svelte` file, but you can return the data in any
-	// format you like.
 	return {
-		query,
-		options: { initial }
+		sandwichesQuery,
+		drinksQuery,
+		sandwiches: sandwichesResult?.data ?? [],
+		drinks: drinksResult?.data ?? [],
+		options: { 
+			initial: sandwichesResult // Retain for preview mode compatibility if needed
+		}
 	};
 };

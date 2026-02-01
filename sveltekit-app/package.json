@@ -14,7 +14,10 @@
 		"@sanity/image-url": "^1.0.2",
 		"@sanity/svelte-loader": "^1.11.1",
 		"@sanity/visual-editing": "^2.0.0",
-		"groq": "^3.33.0"
+		"@stripe/stripe-js": "^8.7.0",
+		"groq": "^3.33.0",
+		"remixicon": "^4.9.1",
+		"stripe": "^20.3.0"
 	},
 	"devDependencies": {
 		"@portabletext/svelte": "^2.1.11",
@@ -23,6 +26,8 @@
 		"@sveltejs/adapter-auto": "^3.2.2",
 		"@sveltejs/kit": "^2.49.5",
 		"@sveltejs/vite-plugin-svelte": "^3.1.1",
+		"@tailwindcss/typography": "^0.5.19",
+		"@tailwindcss/vite": "^4.1.18",
 		"@typescript-eslint/eslint-plugin": "^6.21.0",
 		"@typescript-eslint/parser": "^6.21.0",
 		"autoprefixer": "^10.4.20",
@@ -33,6 +38,7 @@
 		"prettier": "^3.3.3",
 		"prettier-plugin-svelte": "^3.2.6",
 		"svelte": "^4.2.18",
+		"tailwindcss": "^4.1.18",
 		"tslib": "^2.6.3",
 		"typescript": "^5.5.3",
 		"vite": "^5.3.5"
