@@ -60,6 +60,6 @@
             {/each}
         </div>
     {/if}
-	</div>
-	<CartFloatingButton /-->
+	</div-->
+	<CartFloatingButton />
 </div>
