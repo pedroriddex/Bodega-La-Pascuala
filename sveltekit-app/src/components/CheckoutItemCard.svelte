@@ -19,13 +19,13 @@
 </script>
 
 <div
-	class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 shadow-sm transition-all hover:bg-gray-50/50"
+	class="flex items-center justify-between p-4 bg-white rounded-xl border border-[#214593] shadow-sm transition-all hover:bg-gray-50/50"
 >
 	<div class="flex flex-col">
 		<span class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-			{item.type === 'half' ? 'Media' : 'Entero'}
+			{item.type === 'half' ? 'Medio' : 'Entero'}
 		</span>
-		<h3 class="font-bold text-gray-900 text-lg leading-tight mb-2">{item.title}</h3>
+		<h3 class="font-bold text-[#214593] text-lg leading-tight mb-2">{item.title}</h3>
 
 		<div
 			class="flex flex-row items-center rounded-full border border-gray-200 bg-white shadow-sm h-8 self-start"

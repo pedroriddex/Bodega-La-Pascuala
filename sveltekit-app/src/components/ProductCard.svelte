@@ -9,12 +9,12 @@
 </script>
 
 <article
-	class="group flex flex-row overflow-hidden rounded-xl bg-white transition-all duration-300 hover:bg-gray-50/50 border border-gray-300 hover:shadow-sm"
+	class="group flex flex-col md:flex-row rounded-xl mt-12 md:mt-0 bg-white transition-all duration-300 hover:bg-gray-50/50 border border-gray-300 hover:shadow-sm"
 >
 	<!-- Contenido (Izquierda) -->
-	<div class="flex flex-1 flex-col justify-between p-4 pr-2">
+	<div class="flex flex-1 flex-col justify-between p-4 pr-2 -mt-12 md:mt-0">
 		<div>
-			<h3 class="mb-1 text-lg font-bold uppercase text-brand-blue leading-tight tracking-tight">
+			<h3 class="mb-1 text-lg font-bold uppercase text-[#214593] leading-tight tracking-tight">
 				{product.title}
 			</h3>
 
@@ -60,12 +60,16 @@
 
 	<!-- Imagen del producto (Derecha) -->
 	{#if product.image?.asset}
-		<div class="relative w-48 md:w-52 h-full min-w-[128px] md:w-40 md:min-w-[160px] p-0 self-center">
-			<div class="aspect-square h-full w-full overflow-hidden rounded-lg bg-gray-100 relative">
+		<div
+			class="relative min-w-[128px] md:w-60 w-full -order-1 md:order-0 md:min-w-[160px] p-0 self-center md:p-2"
+		>
+			<div
+				class="w-full overflow-hidden rounded-lg bg-gray-100 md:relative relative -top-12 md:top-0"
+			>
 				<img
-					src={urlFor(product.image).width(300).height(300).url()}
+					src={urlFor(product.image).width(500).url()}
 					alt={product.image?.alt || product.title}
-					class="h-full w-full object-cover"
+					class="object-contain"
 				/>
 				<!-- Overlay sutil -->
 				<div
@@ -74,7 +78,7 @@
 			</div>
 		</div>
 	{:else}
-		<div class="relative w-32 min-w-[128px] md:w-40 md:min-w-[160px] p-2 self-center">
+		<div class="relative w-32 min-w-[128px] md:w-60 md:min-w-[160px] p-2 self-center">
 			<div class="aspect-square w-full flex items-center justify-center rounded-lg bg-gray-50">
 				<svg class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path

@@ -25,25 +25,29 @@
 </script>
 
 <div class="flex flex-col items-start gap-1">
-    {#if type !== 'drink'}
-        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 ml-1">
-            {type === 'half' ? 'Medio' : 'Entero'}
-        </span>
-    {/if}
+	{#if type !== 'drink'}
+		<span class="text-[10px] font-bold uppercase tracking-wider text-[#214593] ml-1">
+			{type === 'half' ? 'Medio' : 'Entero'}
+		</span>
+	{/if}
 
 	<div
 		class="flex items-center gap-2 rounded-full px-2 py-2 transition-all duration-300 shadow-sm {type ===
 		'half'
-			? 'bg-brand-yellow/20 text-brand-blue border border-brand-yellow/20'
-			: type === 'drink' ? 'bg-black text-white border' : 'bg-black text-white border'}"
+			? 'bg-brand-yellow/20 text-[#214593] border border-[#214593]'
+			: type === 'drink'
+				? 'bg-[#214593] text-white border'
+				: 'bg-[#214593] text-white border'}"
 	>
 		{#if quantity > 0}
 			<div transition:scale={{ duration: 200, easing: cubicOut, start: 0.5 }} class="flex">
 				<button
 					class="flex h-5 w-5 items-center justify-center rounded-full transition-transform hover:scale-110 {type ===
 					'half'
-						? 'bg-white text-brand-blue hover:bg-white/80'
-						: type === 'drink' ? 'bg-white text-brand-blue hover:bg-white/90' : 'bg-white text-black hover:bg-gray-200'}"
+						? 'bg-white text-[#214593] hover:bg-white/80'
+						: type === 'drink'
+							? 'bg-white text-[#214593] hover:bg-white/90'
+							: 'bg-white text-[#214593] hover:bg-gray-200'}"
 					on:click|preventDefault={removeFromCart}
 					aria-label="Quitar uno"
 				>
@@ -75,7 +79,9 @@
 			class="flex h-5 w-5 items-center justify-center rounded-full transition-transform hover:scale-110 {type ===
 			'half'
 				? 'bg-brand-yellow text-brand-blue hover:bg-brand-yellow/80'
-				: type === 'drink' ? 'bg-white text-black hover:bg-gray-200' : 'bg-white text-black hover:bg-gray-200'}"
+				: type === 'drink'
+					? 'bg-white text-black hover:bg-gray-200'
+					: 'bg-white text-black hover:bg-gray-200'}"
 			on:click|preventDefault={addToCart}
 			aria-label="Añadir otro"
 		>

@@ -6,7 +6,9 @@
 
 <div class="space-y-6 animate-fade-in">
 	<div class="space-y-2">
-		<label for="notes" class="block text-sm font-bold text-gray-700 tracking-wide uppercase">Notas del pedido (Opcional)</label>
+		<label for="notes" class="block text-sm font-bold text-gray-700 tracking-wide uppercase"
+			>Notas del pedido (Opcional)</label
+		>
 		<textarea
 			id="notes"
 			bind:value={data.notes}
@@ -16,7 +18,9 @@
 		></textarea>
 	</div>
 
-	<div class="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl border border-gray-100 shadow-sm">
+	<div
+		class="bg-gradient-to-br from-white to-gray-50 p rounded-2xl border border-gray-100 shadow-sm"
+	>
 		<div class="flex items-center gap-3 mb-6">
 			<div class="h-8 w-1 bg-brand-blue rounded-full"></div>
 			<h3 class="font-bold text-gray-900 text-lg">Pago Seguro</h3>

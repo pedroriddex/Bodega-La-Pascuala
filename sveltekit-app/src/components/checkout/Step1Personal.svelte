@@ -9,31 +9,35 @@
 </script>
 
 <div class="space-y-6 animate-fade-in">
-	<div class="grid grid-cols-2 gap-6">
-		<div class="space-y-2">
-			<label for="firstName" class="block text-sm font-bold text-gray-700 tracking-wide uppercase">Nombre</label>
-			<input
-				type="text"
-				id="firstName"
-				bind:value={data.firstName}
-				class="w-full rounded-xl border-gray-200 bg-gray-50 p-4 text-gray-900 placeholder-gray-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 focus:bg-white transition-all shadow-sm"
-				placeholder="Tu nombre"
-			/>
-		</div>
-		<div class="space-y-2">
-			<label for="lastName" class="block text-sm font-bold text-gray-700 tracking-wide uppercase">Apellidos</label>
-			<input
-				type="text"
-				id="lastName"
-				bind:value={data.lastName}
-				class="w-full rounded-xl border-gray-200 bg-gray-50 p-4 text-gray-900 placeholder-gray-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 focus:bg-white transition-all shadow-sm"
-				placeholder="Tus apellidos"
-			/>
-		</div>
+	<div class="space-y-2">
+		<label for="firstName" class="block text-sm font-bold text-gray-700 tracking-wide uppercase"
+			>Nombre</label
+		>
+		<input
+			type="text"
+			id="firstName"
+			bind:value={data.firstName}
+			class="w-full rounded-xl border-gray-200 bg-gray-50 p-4 text-gray-900 placeholder-gray-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 focus:bg-white transition-all shadow-sm"
+			placeholder="Tu nombre"
+		/>
+	</div>
+	<div class="space-y-2">
+		<label for="lastName" class="block text-sm font-bold text-gray-700 tracking-wide uppercase"
+			>Apellidos</label
+		>
+		<input
+			type="text"
+			id="lastName"
+			bind:value={data.lastName}
+			class="w-full rounded-xl border-gray-200 bg-gray-50 p-4 text-gray-900 placeholder-gray-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 focus:bg-white transition-all shadow-sm"
+			placeholder="Tus apellidos"
+		/>
 	</div>
 
 	<div class="space-y-2">
-		<label for="email" class="block text-sm font-bold text-gray-700 tracking-wide uppercase">Email</label>
+		<label for="email" class="block text-sm font-bold text-gray-700 tracking-wide uppercase"
+			>Email</label
+		>
 		<input
 			type="email"
 			id="email"
@@ -44,7 +48,9 @@
 	</div>
 
 	<div class="space-y-2">
-		<label for="phone" class="block text-sm font-bold text-gray-700 tracking-wide uppercase">Teléfono</label>
+		<label for="phone" class="block text-sm font-bold text-gray-700 tracking-wide uppercase"
+			>Teléfono</label
+		>
 		<input
 			type="tel"
 			id="phone"

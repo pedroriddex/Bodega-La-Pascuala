@@ -10,10 +10,10 @@
 	import Step2Delivery from '../../components/checkout/Step2Delivery.svelte';
 	import Step3Payment from '../../components/checkout/Step3Payment.svelte';
 	import InfoSummary from '../../components/checkout/InfoSummary.svelte';
-    import DrinkCard from '../../components/DrinkCard.svelte';
+	import DrinkCard from '../../components/DrinkCard.svelte';
 	import type { PageData } from './$types';
 
-    export let data: PageData;
+	export let data: PageData;
 
 	// Hardcoded public key as requested by user in chat history context (though usually via env)
 	// For implementing this, I will use the one provided in .env via import if possible, or string literal if needed.
@@ -22,9 +22,9 @@
 		'pk_test_51SfhucK6FKLyZ50mxUujwnnTFngGmiwTibWWsc9aw02Pt23Wv9lv5z3tmBFfReO6Iy3G3oeurjkl8xZXUalRJR9c00PkXI1dqS';
 
 	let step = 0; // 0: Summary, 1: Personal, 2: Delivery, 3: Payment
-	
-    // Using auto-subscription syntax for better readability in template
-    // But for logic we might want to access values directly or just use $checkout
+
+	// Using auto-subscription syntax for better readability in template
+	// But for logic we might want to access values directly or just use $checkout
 
 	// Stripe Variables
 	let stripe: any = null;
@@ -35,11 +35,11 @@
 
 	onMount(async () => {
 		stripe = await loadStripe(PUBLIC_STRIPE_KEY);
-        checkout.loadFromStorage();
+		checkout.loadFromStorage();
 	});
-    
-    // Auto-persist on change
-    $: checkout.persist($checkout);
+
+	// Auto-persist on change
+	$: checkout.persist($checkout);
 
 	function isPersonalComplete() {
 		return (
@@ -53,9 +53,7 @@
 	function isDeliveryComplete() {
 		if ($checkout.method === 'pickup') return true;
 		return (
-			$checkout.address.trim() !== '' &&
-			$checkout.city.trim() !== '' &&
-			$checkout.zip.trim() !== ''
+			$checkout.address.trim() !== '' && $checkout.city.trim() !== '' && $checkout.zip.trim() !== ''
 		);
 	}
 
@@ -74,7 +72,7 @@
 			// No skip
 			step = 1;
 		}
-		
+
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 
@@ -143,67 +141,67 @@
 		});
 
 		if (error) {
-            // Check specific error types
+			// Check specific error types
 			if (error.type === 'card_error' || error.type === 'validation_error') {
 				errorMessage = error.message || 'Error en el pago';
 			} else {
 				errorMessage = 'Un error inesperado ocurrió.';
 			}
-            loading = false;
+			loading = false;
 		} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-            // Payment Successful -> Create Order
-            try {
-                const orderData = {
-                    customer: {
-                        firstName: $checkout.firstName,
-                        lastName: $checkout.lastName,
-                        email: $checkout.email,
-                        phone: $checkout.phone
-                    },
-                    delivery: {
-                        method: $checkout.method,
-                        address: $checkout.address,
-                        city: $checkout.city,
-                        zip: $checkout.zip
-                    },
-                    items: $cart.map(item => ({
-                        name: item.title,
-                        quantity: item.quantity,
-                        price: item.price,
-                        type: item.type,
-                        total: item.price * item.quantity
-                    })),
-                    totalAmount: $cartTotal,
-                    stripePaymentId: paymentIntent.id
-                };
+			// Payment Successful -> Create Order
+			try {
+				const orderData = {
+					customer: {
+						firstName: $checkout.firstName,
+						lastName: $checkout.lastName,
+						email: $checkout.email,
+						phone: $checkout.phone
+					},
+					delivery: {
+						method: $checkout.method,
+						address: $checkout.address,
+						city: $checkout.city,
+						zip: $checkout.zip
+					},
+					items: $cart.map((item) => ({
+						name: item.title,
+						quantity: item.quantity,
+						price: item.price,
+						type: item.type,
+						total: item.price * item.quantity
+					})),
+					totalAmount: $cartTotal,
+					stripePaymentId: paymentIntent.id
+				};
 
-                const res = await fetch('/api/create-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
+				const res = await fetch('/api/create-order', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(orderData)
+				});
 
-                if (res.ok) {
-                    // Success -> Redirect
-                    window.location.href = '/success';
-                } else {
-                    errorMessage = 'El pago se realizó, pero hubo un error creando el pedido. Contacte con nosotros.';
-                    loading = false;
-                }
-
-            } catch (e) {
-                console.error(e);
-                errorMessage = 'Error de conexión creando el pedido.';
-                loading = false;
-            }
+				if (res.ok) {
+					// Success -> Redirect
+					window.location.href = '/success';
+				} else {
+					errorMessage =
+						'El pago se realizó, pero hubo un error creando el pedido. Contacte con nosotros.';
+					loading = false;
+				}
+			} catch (e) {
+				console.error(e);
+				errorMessage = 'Error de conexión creando el pedido.';
+				loading = false;
+			}
 		} else {
-            loading = false;
-        }
+			loading = false;
+		}
 	}
 </script>
 
-<div class="container mx-auto px-4 py-8 pb-32 max-w-2xl">
-	<header class="mb-8 flex items-center gap-4">
+<div class="container mx-auto px-0 py-0 pb-32 max-w-2xl">
+	<header class="mb-8 flex items-center gap-4 px-4 mt-4">
 		{#if step === 0}
 			<a
 				href="/"
@@ -266,131 +264,146 @@
 			{#key step}
 				<div in:fade={{ duration: 300 }}>
 					{#if step === 0}
-				<div>
-					<div class="space-y-4 mb-8">
-						{#each $cart as item (item.id + item.type)}
-							<div transition:slide|local>
-								<CheckoutItemCard {item} />
+						<div>
+							<div class="space-y-4 mb-8">
+								{#each $cart as item (item.id + item.type)}
+									<div transition:slide|local>
+										<CheckoutItemCard {item} />
+									</div>
+								{/each}
 							</div>
-						{/each}
-					</div>
 
-					<div class="border-t border-gray-200 pt-6">
+							<div class="border-t border-gray-200 pt-6">
+								<div class="flex items-center justify-between mb-8">
+									<span class="text-xl font-bold text-gray-800">Total</span>
+									<span class="text-2xl font-bold text-[#214593]">{$cartTotal.toFixed(2)}€</span>
+								</div>
 
-
-						<div class="flex items-center justify-between mb-8">
-							<span class="text-xl font-bold text-gray-800">Total</span>
-							<span class="text-2xl font-bold text-[#214593]">{$cartTotal.toFixed(2)}€</span>
+								<button
+									on:click={startCheckout}
+									class="w-full rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+								>
+									Continuar con el pedido
+								</button>
+							</div>
 						</div>
-
-						<button
-							on:click={startCheckout}
-							class="w-full rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
-						>
-							Realizar Pedido
-						</button>
-					</div>
-				</div>
-			{:else if step === 1}
-				<div>
-					<h2 class="text-xl font-bold text-gray-900 mb-6">Datos Personales</h2>
-					<Step1Personal bind:data={$checkout} />
-					<button
-						on:click={nextStep}
-						class="w-full mt-8 rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg"
-					>
-						Continuar
-					</button>
-				</div>
-			{:else if step === 2}
-				<div>
-					<h2 class="text-xl font-bold text-gray-900 mb-6">Método de Entrega</h2>
-					
-					<InfoSummary 
-						title="Datos Personales" 
-						content={[
-							{ label: 'Nombre', value: `${$checkout.firstName} ${$checkout.lastName}` },
-							{ label: 'Email', value: $checkout.email },
-							{ label: 'Teléfono', value: $checkout.phone }
-						]} 
-						on:edit={() => { step = 1; window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-					/>
-
-					<Step2Delivery bind:data={$checkout} />
-					<button
-						on:click={nextStep}
-						class="w-full mt-8 rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg"
-					>
-						Continuar al Pago
-					</button>
-				</div>
-			{:else if step === 3}
-				<div>
-					<h2 class="text-xl font-bold text-gray-900 mb-6">Pago y Notas</h2>
-					
-					<div class="space-y-4 mb-6">
-						<InfoSummary 
-							title="Datos Personales" 
-							content={[
-								{ label: 'Nombre', value: `${$checkout.firstName} ${$checkout.lastName}` },
-								{ label: 'Email', value: $checkout.email },
-								{ label: 'Teléfono', value: $checkout.phone }
-							]} 
-							on:edit={() => { step = 1; window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-						/>
-						
-						<InfoSummary 
-							title="Entrega" 
-							content={[
-								{ label: 'Método', value: $checkout.method === 'pickup' ? 'Recogida en Local' : 'Envío a Domicilio' },
-								...($checkout.method === 'delivery' ? [
-									{ label: 'Dirección', value: $checkout.address },
-									{ label: 'Ciudad', value: `${$checkout.city} (${$checkout.zip})` }
-								] : [])
-							]} 
-							on:edit={() => { step = 2; window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-						/>
-					</div>
-
-					<Step3Payment bind:data={$checkout} />
-
-					{#if errorMessage}
-						<div class="text-red-600 bg-red-50 p-3 rounded-lg text-sm mt-4">
-							{errorMessage}
+					{:else if step === 1}
+						<div>
+							<h2 class="text-xl font-bold text-gray-900 mb-6">Datos Personales</h2>
+							<Step1Personal bind:data={$checkout} />
+							<button
+								on:click={nextStep}
+								class="w-full mt-8 rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg"
+							>
+								Continuar
+							</button>
 						</div>
-					{/if}
+					{:else if step === 2}
+						<div>
+							<h2 class="text-xl font-bold text-gray-900 mb-6">Método de Entrega</h2>
 
-					<div class="mt-8 border-t border-gray-100 pt-6">
-						<div class="flex items-center justify-between mb-6">
-							<span class="text-xl font-bold text-gray-800">Total a Pagar</span>
-							<span class="text-2xl font-bold text-[#214593]">{$cartTotal.toFixed(2)}€</span>
+							<InfoSummary
+								title="Datos Personales"
+								content={[
+									{ label: 'Nombre', value: `${$checkout.firstName} ${$checkout.lastName}` },
+									{ label: 'Email', value: $checkout.email },
+									{ label: 'Teléfono', value: $checkout.phone }
+								]}
+								on:edit={() => {
+									step = 1;
+									window.scrollTo({ top: 0, behavior: 'smooth' });
+								}}
+							/>
+
+							<Step2Delivery bind:data={$checkout} />
+							<button
+								on:click={nextStep}
+								class="w-full mt-8 rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg"
+							>
+								Continuar al Pago
+							</button>
 						</div>
-						<button
-							on:click={handleSubmit}
-							disabled={loading || !stripe || !elements}
-							class="w-full rounded-xl bg-[#FABE40] py-4 text-center text-lg font-bold text-[#214593] shadow-lg hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{loading ? 'Procesando...' : 'Pagar y Finalizar'}
-						</button>
-					</div>
-				</div>
+					{:else if step === 3}
+						<div>
+							<h2 class="text-xl font-bold text-gray-900 mb-6">Pago y Notas</h2>
+
+							<div class="space-y-4 mb-6">
+								<InfoSummary
+									title="Datos Personales"
+									content={[
+										{ label: 'Nombre', value: `${$checkout.firstName} ${$checkout.lastName}` },
+										{ label: 'Email', value: $checkout.email },
+										{ label: 'Teléfono', value: $checkout.phone }
+									]}
+									on:edit={() => {
+										step = 1;
+										window.scrollTo({ top: 0, behavior: 'smooth' });
+									}}
+								/>
+
+								<InfoSummary
+									title="Entrega"
+									content={[
+										{
+											label: 'Método',
+											value:
+												$checkout.method === 'pickup' ? 'Recogida en Local' : 'Envío a Domicilio'
+										},
+										...($checkout.method === 'delivery'
+											? [
+													{ label: 'Dirección', value: $checkout.address },
+													{ label: 'Ciudad', value: `${$checkout.city} (${$checkout.zip})` }
+												]
+											: [])
+									]}
+									on:edit={() => {
+										step = 2;
+										window.scrollTo({ top: 0, behavior: 'smooth' });
+									}}
+								/>
+							</div>
+
+							<Step3Payment bind:data={$checkout} />
+
+							{#if errorMessage}
+								<div class="text-red-600 bg-red-50 p-3 rounded-lg text-sm mt-4">
+									{errorMessage}
+								</div>
+							{/if}
+
+							<div class="mt-8 border-t border-gray-100 pt-6">
+								<div class="flex items-center justify-between mb-6">
+									<span class="text-xl font-bold text-gray-800">Total a Pagar</span>
+									<span class="text-2xl font-bold text-[#214593]">{$cartTotal.toFixed(2)}€</span>
+								</div>
+								<button
+									on:click={handleSubmit}
+									disabled={loading || !stripe || !elements}
+									class="w-full rounded-xl bg-[#FABE40] py-4 text-center text-lg font-bold text-[#214593] shadow-lg hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									{loading ? 'Procesando...' : 'Pagar y Finalizar'}
+								</button>
+							</div>
+						</div>
 					{/if}
 				</div>
 			{/key}
 		</div>
 
-        <!-- Cross-sell Bebidas (Fuera del carrito, step 0) -->
-        {#if step === 0 && data.drinks && data.drinks.length > 0}
-            <div class="mt-8">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 px-2">¿Quieres añadir algo de beber?</h3>
-                <div class="flex gap-4 overflow-x-auto pb-4 snap-x px-2">
-                    {#each data.drinks as drink (drink._id)}
-                        <div class="min-w-[280px] snap-center bg-white rounded-xl shadow-sm border border-gray-100 p-2">
-                            <DrinkCard product={drink} />
-                        </div>
-                    {/each}
-                </div>
-            </div>
-        {/if}
+		<!-- Cross-sell Bebidas (Fuera del carrito, step 0) -->
+		{#if step === 0 && data.drinks && data.drinks.length > 0}
+			<div class="mt-8">
+				<h3 class="text-lg font-bold text-gray-800 mb-4 px-2">¿Quieres añadir algo de beber?</h3>
+				<div class="flex gap-4 overflow-x-auto pb-4 snap-x px-2">
+					{#each data.drinks as drink (drink._id)}
+						<div
+							class="min-w-[280px] snap-center bg-white rounded-xl shadow-sm border border-gray-100 p-2"
+						>
+							<DrinkCard product={drink} />
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
