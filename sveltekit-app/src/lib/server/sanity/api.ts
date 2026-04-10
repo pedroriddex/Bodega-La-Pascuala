@@ -1,4 +1,6 @@
-import { env } from '$env/dynamic/private';
+import { getSanityConfig } from '$lib/server/config';
 
-export const token = env.SANITY_API_READ_TOKEN;
-export const writeToken = env.SANITY_API_WRITE_TOKEN;
+const sanityConfig = getSanityConfig();
+
+export const token = sanityConfig.sanityReadToken;
+export const writeToken = sanityConfig.sanityWriteToken;

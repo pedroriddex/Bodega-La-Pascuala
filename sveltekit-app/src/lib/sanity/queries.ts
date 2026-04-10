@@ -7,3 +7,4 @@ export const sandwichQuery = groq`*[_type == "sandwich" && _id == $id][0]`;
 
 export const drinksQuery = groq`*[_type == "drink"] | order(_createdAt desc)`;
 
+export const storeSettingsQuery = groq`*[_type == "storeSettings" && _id == "storeSettings"][0]{isOpen, closedMessage}`;

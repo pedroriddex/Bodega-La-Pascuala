@@ -7,8 +7,10 @@
     "studio"
   ],
   "scripts": {
+    "backfill:order-item-keys": "node scripts/backfill-order-item-keys.mjs",
     "dev": "concurrently \"npm run dev --workspace=sveltekit-app\" \"npm run dev --workspace=studio\"",
-    "format": "prettier --cache --write ."
+    "format": "prettier --cache --write .",
+    "import:bocadillos": "node scripts/import-bocadillos.mjs"
   },
   "prettier": {
     "plugins": [

@@ -18,9 +18,7 @@
 		></textarea>
 	</div>
 
-	<div
-		class="bg-gradient-to-br from-white to-gray-50 p rounded-2xl border border-gray-100 shadow-sm"
-	>
+	<div class="bg-linear-to-br from-white to-gray-50 p rounded-2xl">
 		<div class="flex items-center gap-3 mb-6">
 			<div class="h-8 w-1 bg-brand-blue rounded-full"></div>
 			<h3 class="font-bold text-gray-900 text-lg">Pago Seguro</h3>

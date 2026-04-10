@@ -1,4 +1,11 @@
 <script lang="ts">
+	import {
+		DELIVERY_MAX_DISTANCE_KM,
+		STORE_LOCATION,
+		STORE_MAP_EMBED_URL,
+		STORE_MAP_URL
+	} from '$lib/config/delivery';
+
 	export let data: {
 		method: 'pickup' | 'delivery';
 		address: string;
@@ -6,6 +13,9 @@
 		zip: string;
 		saveAddress: boolean;
 	};
+
+	export let checkingDistance = false;
+	export let distanceKm: number | null = null;
 </script>
 
 <div class="space-y-8 animate-fade-in">
@@ -43,6 +53,52 @@
 			</div>
 			<span class="font-bold text-sm uppercase tracking-wide">Envío a Domicilio</span>
 		</label>
+	</div>
+
+	<div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+		<div class="flex items-start gap-3">
+			<div class="mt-1 rounded-lg bg-blue-50 p-2 text-[#214593]">
+				<i class="ri-map-pin-2-line text-xl"></i>
+			</div>
+			<div class="min-w-0">
+				<p class="text-xs font-bold uppercase tracking-wide text-[#214593]">Ubicación del local</p>
+				<p class="text-sm font-semibold text-gray-800">{STORE_LOCATION.name}</p>
+				<p class="text-sm text-gray-600">{STORE_LOCATION.address}</p>
+				<p class="mt-2 text-xs text-gray-500">
+					El envío a domicilio se realiza solo en un radio de {DELIVERY_MAX_DISTANCE_KM} km.
+				</p>
+			</div>
+		</div>
+
+		<div class="mt-4 overflow-hidden rounded-xl border border-gray-200">
+			<iframe
+				title="Mapa de Bodega La Pascuala"
+				src={STORE_MAP_EMBED_URL}
+				class="h-64 w-full"
+				loading="lazy"
+				referrerpolicy="no-referrer-when-downgrade"
+			></iframe>
+		</div>
+
+		<div class="mt-3 flex items-center justify-between gap-3">
+			<a
+				href={STORE_MAP_URL}
+				target="_blank"
+				rel="noreferrer"
+				class="text-sm font-semibold text-[#214593] hover:underline"
+			>
+				Abrir mapa en OpenStreetMap
+			</a>
+			{#if data.method === 'delivery'}
+				{#if checkingDistance}
+					<span class="text-xs font-medium text-gray-500">Comprobando cobertura...</span>
+				{:else if distanceKm !== null}
+					<span class="text-xs font-medium text-emerald-700">
+						Distancia estimada: {distanceKm.toFixed(2)} km
+					</span>
+				{/if}
+			{/if}
+		</div>
 	</div>
 
 	{#if data.method === 'delivery'}

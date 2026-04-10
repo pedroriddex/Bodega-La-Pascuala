@@ -1,4 +1,4 @@
-import typography from '@tailwindcss/typography'
+import typography from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,13 +10,13 @@ export default {
 				secondary: '#FABE40', // Mapping secondary to brand yellow
 				brand: {
 					blue: '#214593',
-					yellow: '#FABE40',
-				},
+					yellow: '#FABE40'
+				}
 			},
 			fontFamily: {
-				sans: ['Montserrat', 'sans-serif'],
-			},
-		},
+				sans: ['Montserrat', 'sans-serif']
+			}
+		}
 	},
-	plugins: [typography],
-}
+	plugins: [typography]
+};

@@ -10,5 +10,5 @@ export const serverClient = client.withConfig({
 export const writeClient = client.withConfig({
 	token: writeToken,
 	useCdn: false,
-	stega: false 
+	stega: false
 });

@@ -2,7 +2,10 @@
 node_modules
 /build
 /.svelte-kit
+/.vercel
 /package
+coverage
+*.tsbuildinfo
 .env
 .env.*
 !.env.example

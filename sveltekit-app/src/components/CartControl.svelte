@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cart } from '$lib/stores/cart';
-	import { scale, slide } from 'svelte/transition';
+	import { scale } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
 	export let id: string;
@@ -65,10 +65,7 @@
 
 		<span class="text-sm font-bold min-w-[3ch] text-center flex items-center justify-center">
 			{#if quantity > 0}
-				<span
-					transition:scale={{ duration: 200, easing: cubicOut, start: 0.5, axis: 'x' }}
-					class="mr-1"
-				>
+				<span transition:scale={{ duration: 200, easing: cubicOut, start: 0.5 }} class="mr-1">
 					{quantity} x
 				</span>
 			{/if}

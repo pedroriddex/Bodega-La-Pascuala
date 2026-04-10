@@ -3,8 +3,11 @@
 	import { page } from '$app/stores';
 	import { fade } from 'svelte/transition';
 	import LiveMode from '../components/LiveMode.svelte';
+	import type { LayoutData } from './$types';
 	import '../app.css';
 	import 'remixicon/fonts/remixicon.css';
+
+	export let data: LayoutData;
 </script>
 
 {#if $isPreviewing}
@@ -25,10 +28,18 @@
 	<header class="sticky top-0 z-10 border-b border-gray-200 bg-white">
 		<div class="mx-auto px-4 py-5 sm:px-6 lg:px-8 max-w-2xl justify-center items-center flex">
 			<a href="/">
-				<img class="w-32" src="./logo.webp" alt="Bodega La Pascuala">
+				<img class="w-32" src="./logo.webp" alt="Bodega La Pascuala" />
 			</a>
 		</div>
 	</header>
+
+	{#if !data.storeStatus.isOpen}
+		<div class="border-b border-red-200 bg-red-50">
+			<div class="mx-auto w-full max-w-2xl px-4 py-3 text-sm font-semibold text-red-700">
+				<i class="ri-store-3-line mr-2"></i>{data.storeStatus.closedMessage}
+			</div>
+		</div>
+	{/if}
 
 	<main class="flex-1 mx-auto w-full max-w-7xl md:px-4 md:py-8 sm:px-6 lg:px-8">
 		{#key $page.url.pathname}
@@ -37,7 +48,6 @@
 			</div>
 		{/key}
 	</main>
-
 </div>
 
 {#if $isPreviewing}

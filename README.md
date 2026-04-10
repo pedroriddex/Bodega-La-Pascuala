@@ -1,91 +1,81 @@
-# Clean SvelteKit + Sanity app
+# Bodega La Pascuala
 
-This template includes a [SvelteKit](https://svelte.dev/docs/kit/introduction) app with a [Sanity Studio](https://www.sanity.io/) – an open-source React application that connects to your Sanity project’s hosted dataset. The Studio is configured locally and can then be deployed for content collaboration.
+Monorepo con:
 
-## Features
+- `sveltekit-app`: storefront y checkout con Stripe
+- `studio`: backoffice de contenido y gestión de pedidos (Sanity Studio)
 
-- Fetch content seamlessly with [Sanity Content Lake](https://www.sanity.io/docs/datastore).
-- Render beautiful block content using [Portable Text](https://www.sanity.io/docs/presenting-block-text).
-- Manage and create content with the intuitive [Sanity Studio](https://www.sanity.io/docs/sanity-studio).
-- Live visual editing through [Sanity's Presentation tools](https://www.sanity.io/docs/presentation).
-- Advanced image cropping and rendering via [Sanity Image URLs](https://www.sanity.io/docs/image-url).
+## Requisitos
 
-## Demo
+- Node.js 20+
+- npm 10+
 
-https://sanity-template-sveltekit-clean.sanity.build
+## Instalación
 
-## Getting Started
-
-### Install the template
-
-#### 1. Initialize template with Sanity CLI
-
-Run the command in your Terminal to initialize this template on your local computer.
-
-See the documentation if you are [having issues with the CLI](https://www.sanity.io/help/cli-errors).
-
-```shell
-npm create sanity@latest -- --template sanity-io/sanity-template-sveltekit-clean
+```bash
+npm install
 ```
 
-#### 2. Run the application and Sanity Studio
+## Variables de entorno
 
-Navigate to the template directory using `cd <your app name>`, and start the development servers by running the following command
+Configura `sveltekit-app/.env` a partir de `sveltekit-app/.env.example`.
 
-```shell
+Variables clave:
+
+- `PUBLIC_SANITY_PROJECT_ID`
+- `PUBLIC_SANITY_DATASET`
+- `SANITY_API_READ_TOKEN`
+- `SANITY_API_WRITE_TOKEN`
+- `PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `TRACKING_TOKEN_SECRET`
+
+## Desarrollo
+
+```bash
 npm run dev
 ```
 
-#### 3. Open the app and sign in to the Studio
+- Storefront: `http://localhost:5173`
+- Studio: `http://localhost:3333`
 
-Open the SvelteKit app running locally in your browser on [http://localhost:5173](http://localhost:5173).
+## Flujo de pagos y pedidos
 
-Open the Studio running locally in your browser on [http://localhost:3333](http://localhost:3333). You should now see a screen prompting you to log in to the Studio. Use the same service (Google, GitHub, or email) that you used when you logged in to the CLI.
+1. El checkout llama `POST /api/create-payment-intent` con items y datos del cliente.
+2. El backend recalcula precio canónico desde Sanity y crea un pedido `pending_payment`.
+3. Stripe confirma el pago y envía webhook a `POST /api/stripe/webhook`.
+4. El webhook mueve el pedido a `paid` de forma idempotente.
+5. El cliente accede al tracking con URL firmada: `/order/:publicId?t=<token>`.
 
-### Adding content with Sanity
+## Configurar webhook de Stripe
 
-#### 1. Publish your first document
+En Stripe Dashboard (staging/producción):
 
-The template comes pre-defined with a schema containing a `Post` document type.
+- Endpoint: `https://<tu-dominio>/api/stripe/webhook`
+- Eventos:
+  - `payment_intent.succeeded`
+  - `payment_intent.payment_failed`
+  - `payment_intent.canceled`
+- Copia el signing secret en `STRIPE_WEBHOOK_SECRET`
 
-From the Studio, click "+ Create" and select the `Post` document type. Go ahead and create and publish the document.
+## Calidad
 
-Your content should now appear in your SvelteKit app ([http://localhost:5173](http://localhost:5173)) as well as in the Studio on the "Presentation" Tab
-
-#### 2. Extending the Sanity schema
-
-The schema for the `Post` document type is defined in the `studio/src/schemaTypes/post.ts` file. You can [add more document types](https://www.sanity.io/docs/schema-types) to the schema to suit your needs.
-
-### Deploying your application and inviting editors
-
-#### 1. Deploy Sanity Studio
-
-Your SvelteKit frontend (`/sveltekit-app`) and Sanity Studio (`/studio`) are still only running on your local computer. It's time to deploy and get it into the hands of other content editors.
-
-Back in your Studio directory (`/studio`), run the following command to deploy your Sanity Studio.
-
-```shell
-npx sanity deploy
+```bash
+npm run lint --workspace=sveltekit-app
+npm run test --workspace=sveltekit-app
+npm run build --workspace=sveltekit-app
+npm run build --workspace=studio
 ```
 
-#### 2. Deploy SvelteKit app to Vercel
+## Backfill de `publicId` en pedidos antiguos
 
-You have the freedom to deploy your SvelteKit app to your hosting provider of choice. With Vercel and GitHub being a popular choice, we'll cover the basics of that approach.
+Script:
 
-1. Create a GitHub repository from this project. [Learn more](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github).
-2. Create a new Vercel project and connect it to your Github repository.
-3. Set the `Root Directory` to your SvelteKit app.
-4. Configure your Environment Variables.
+- `scripts/backfill-order-public-id.ts`
 
-#### 3. Invite a collaborator
+Necesita en entorno:
 
-Now that you’ve deployed your SvelteKit application and Sanity Studio, you can optionally invite a collaborator to your Studio. Open up [Manage](https://www.sanity.io/manage), select your project and click "Invite project members"
-
-They will be able to access the deployed Studio, where you can collaborate together on creating content.
-
-## Resources
-
-- [Sanity documentation](https://www.sanity.io/docs/)
-- [SvelteKit documentation](https://svelte.dev/docs/kit/introduction/)
-- [Join the Sanity Community](https://slack.sanity.io)
-- [Learn Sanity](https://www.sanity.io/learn)
+- `SANITY_API_WRITE_TOKEN`
+- `PUBLIC_SANITY_PROJECT_ID` o `SANITY_STUDIO_PROJECT_ID`
+- `PUBLIC_SANITY_DATASET` o `SANITY_STUDIO_DATASET`

@@ -1,23 +1,13 @@
-
-import type { ImageAsset } from '@sanity/types';
+import type { CanonicalOrderItem, OrderStatus } from '$lib/types/order';
 
 export interface SanityImage {
-    asset?: ImageAsset;
-    alt?: string;
-    hotspot?: {
-        x: number;
-        y: number;
-        height: number;
-        width: number;
-    };
-    crop?: {
-        top: number;
-        bottom: number;
-        left: number;
-        right: number;
-        bottom_left?: { x: number; y: number };
-        top_right?: { x: number; y: number };
-    };
+	asset?: {
+		_ref?: string;
+		_type?: string;
+		url?: string;
+	};
+	alt?: string;
+	[key: string]: unknown;
 }
 
 export interface Sandwich {
@@ -43,37 +33,37 @@ export interface Drink {
 	image?: SanityImage;
 }
 
-export interface OrderItem {
-    name: string;
-    quantity: number;
-    price: number;
-    type: 'half' | 'full' | 'drink';
-    total: number;
-}
-
 export interface OrderCustomer {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
+	firstName: string;
+	lastName: string;
+	email: string;
+	phone: string;
 }
 
 export interface OrderDelivery {
-    method: 'pickup' | 'delivery';
-    address?: string;
-    city?: string;
-    zip?: string;
+	method: 'pickup' | 'delivery';
+	address?: string;
+	city?: string;
+	zip?: string;
 }
 
 export interface Order {
-    _type: 'order';
-    _id?: string;
-    orderNumber?: string;
-    customer: OrderCustomer;
-    delivery: OrderDelivery;
-    items: OrderItem[];
-    totalAmount: number;
-    status: 'pending' | 'paid' | 'preparing' | 'shipped' | 'completed' | 'cancelled';
-    stripePaymentId?: string;
-    createdAt: string;
+	_type: 'order';
+	_id?: string;
+	publicId: string;
+	orderNumber?: string;
+	customer: OrderCustomer;
+	delivery: OrderDelivery;
+	items: CanonicalOrderItem[];
+	totalAmount: number;
+	status: OrderStatus;
+	paymentIntentId?: string;
+	stripePaymentId?: string;
+	notes?: string;
+	createdAt: string;
+}
+
+export interface StoreSettings {
+	isOpen?: boolean;
+	closedMessage?: string;
 }

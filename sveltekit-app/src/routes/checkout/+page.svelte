@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { env } from '$env/dynamic/public';
 	import { cart, cartTotal } from '$lib/stores/cart';
 	import { checkout } from '$lib/stores/checkout';
 	import { slide, fade } from 'svelte/transition';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
 	import { loadStripe } from '@stripe/stripe-js';
+	import type { Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 	import CheckoutItemCard from '../../components/CheckoutItemCard.svelte';
 	import Steps from '../../components/checkout/Steps.svelte';
 	import Step1Personal from '../../components/checkout/Step1Personal.svelte';
@@ -11,192 +13,394 @@
 	import Step3Payment from '../../components/checkout/Step3Payment.svelte';
 	import InfoSummary from '../../components/checkout/InfoSummary.svelte';
 	import DrinkCard from '../../components/DrinkCard.svelte';
+	import { DELIVERY_MAX_DISTANCE_KM } from '$lib/config/delivery';
+	import type { CreatePaymentIntentRequest } from '$lib/types/order';
+	import { trackCompletedOrder } from '$lib/client/favorite-orders';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
+	const storeIsOpen = data.storeStatus?.isOpen ?? true;
+	const storeClosedMessage =
+		data.storeStatus?.closedMessage ??
+		'Ahora mismo estamos cerrados. Vuelve en nuestro horario habitual para realizar tu pedido.';
 
-	// Hardcoded public key as requested by user in chat history context (though usually via env)
-	// For implementing this, I will use the one provided in .env via import if possible, or string literal if needed.
-	// Since $env/static/public needs config, I'll use the literal key provided by user for reliability in this session.
-	const PUBLIC_STRIPE_KEY =
-		'pk_test_51SfhucK6FKLyZ50mxUujwnnTFngGmiwTibWWsc9aw02Pt23Wv9lv5z3tmBFfReO6Iy3G3oeurjkl8xZXUalRJR9c00PkXI1dqS';
-
-	let step = 0; // 0: Summary, 1: Personal, 2: Delivery, 3: Payment
-
-	// Using auto-subscription syntax for better readability in template
-	// But for logic we might want to access values directly or just use $checkout
-
-	// Stripe Variables
-	let stripe: any = null;
-	let elements: any = null;
+	let step = 0;
+	let stripe: Stripe | null = null;
+	let elements: StripeElements | null = null;
+	let paymentElement: StripePaymentElement | null = null;
 	let clientSecret: string | null = null;
+	let paymentIntentId: string | null = null;
+	let orderPublicId: string | null = null;
+	let trackingToken: string | null = null;
 	let loading = false;
 	let errorMessage = '';
+	let checkingDeliveryCoverage = false;
+	let deliveryDistanceKm: number | null = null;
+	let lastDeliveryValidationKey: string | null = null;
+	let checkoutStorageReady = false;
 
 	onMount(async () => {
-		stripe = await loadStripe(PUBLIC_STRIPE_KEY);
+		const publishableKey = env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+		if (!publishableKey) {
+			errorMessage = 'Falta la configuración de pago (PUBLIC_STRIPE_PUBLISHABLE_KEY).';
+			return;
+		}
+
 		checkout.loadFromStorage();
+		checkoutStorageReady = true;
+		stripe = await loadStripe(publishableKey);
 	});
 
-	// Auto-persist on change
-	$: checkout.persist($checkout);
+	onDestroy(() => {
+		paymentElement?.destroy();
+	});
 
-	function isPersonalComplete() {
-		return (
-			$checkout.firstName.trim() !== '' &&
-			$checkout.lastName.trim() !== '' &&
-			$checkout.email.trim() !== '' &&
-			$checkout.phone.trim() !== ''
-		);
+	$: if (checkoutStorageReady) checkout.persist($checkout);
+
+	function resetPaymentSession() {
+		paymentElement?.destroy();
+		paymentElement = null;
+		elements = null;
+		clientSecret = null;
+		paymentIntentId = null;
+		orderPublicId = null;
+		trackingToken = null;
 	}
 
-	function isDeliveryComplete() {
-		if ($checkout.method === 'pickup') return true;
-		return (
-			$checkout.address.trim() !== '' && $checkout.city.trim() !== '' && $checkout.zip.trim() !== ''
-		);
+	function validatePersonal(): string | null {
+		if ($checkout.firstName.trim().length === 0) return 'Introduce tu nombre.';
+		if ($checkout.lastName.trim().length === 0) return 'Introduce tus apellidos.';
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($checkout.email.trim())) {
+			return 'Introduce un email válido.';
+		}
+		if ($checkout.phone.trim().length < 6) return 'Introduce un teléfono válido.';
+		return null;
 	}
 
-	function startCheckout() {
-		// Smart Skipping Logic
-		if (isPersonalComplete() && $checkout.saveInfo) {
-			if (isDeliveryComplete() && $checkout.saveAddress) {
-				// Skip to Payment
-				step = 3;
-				initializePayment();
-			} else {
-				// Skip to Delivery
-				step = 2;
+	function validateDeliveryFields(): string | null {
+		if ($checkout.method === 'pickup') return null;
+		if ($checkout.address.trim().length === 0) return 'Introduce la dirección de entrega.';
+		if ($checkout.city.trim().length === 0) return 'Introduce la ciudad.';
+		if ($checkout.zip.trim().length === 0) return 'Introduce el código postal.';
+		return null;
+	}
+
+	function buildDeliveryValidationKey(): string {
+		if ($checkout.method === 'pickup') {
+			return 'pickup';
+		}
+
+		return [
+			$checkout.address.trim().toLowerCase(),
+			$checkout.city.trim().toLowerCase(),
+			$checkout.zip.trim().toLowerCase()
+		].join('|');
+	}
+
+	async function validateDeliveryCoverage(): Promise<string | null> {
+		if ($checkout.method === 'pickup') {
+			deliveryDistanceKm = null;
+			lastDeliveryValidationKey = 'pickup';
+			return null;
+		}
+
+		const deliveryKey = buildDeliveryValidationKey();
+		if (deliveryKey === lastDeliveryValidationKey && deliveryDistanceKm !== null) {
+			return null;
+		}
+
+		checkingDeliveryCoverage = true;
+
+		try {
+			const res = await fetch('/api/delivery/check', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address: $checkout.address.trim(),
+					city: $checkout.city.trim(),
+					zip: $checkout.zip.trim()
+				})
+			});
+
+			const result = (await res.json()) as {
+				valid?: boolean;
+				error?: string;
+				distanceKm?: number;
+			};
+
+			if (!res.ok || !result.valid) {
+				deliveryDistanceKm = null;
+				lastDeliveryValidationKey = null;
+				return (
+					result.error ??
+					`Solo realizamos entregas a un máximo de ${DELIVERY_MAX_DISTANCE_KM} km del local.`
+				);
 			}
-		} else {
-			// No skip
-			step = 1;
-		}
 
-		window.scrollTo({ top: 0, behavior: 'smooth' });
+			deliveryDistanceKm =
+				typeof result.distanceKm === 'number'
+					? Number(result.distanceKm.toFixed(2))
+					: deliveryDistanceKm;
+			lastDeliveryValidationKey = deliveryKey;
+			return null;
+		} catch (error) {
+			console.error('Error checking delivery coverage', error);
+			deliveryDistanceKm = null;
+			lastDeliveryValidationKey = null;
+			return 'No se pudo validar la cobertura de envío. Inténtalo de nuevo.';
+		} finally {
+			checkingDeliveryCoverage = false;
+		}
 	}
 
-	function nextStep() {
-		step += 1;
+	$: {
+		const currentKey = buildDeliveryValidationKey();
+		if (currentKey !== lastDeliveryValidationKey) {
+			deliveryDistanceKm = null;
+		}
+	}
+
+	function createRequestPayload(): CreatePaymentIntentRequest {
+		return {
+			items: $cart.map((item) => ({
+				id: item.id,
+				type: item.type,
+				quantity: item.quantity
+			})),
+			customer: {
+				firstName: $checkout.firstName.trim(),
+				lastName: $checkout.lastName.trim(),
+				email: $checkout.email.trim(),
+				phone: $checkout.phone.trim()
+			},
+			delivery:
+				$checkout.method === 'pickup'
+					? { method: 'pickup' }
+					: {
+							method: 'delivery',
+							address: $checkout.address.trim(),
+							city: $checkout.city.trim(),
+							zip: $checkout.zip.trim()
+						},
+			notes: $checkout.notes.trim()
+		};
+	}
+
+	async function getBestNextStepFromSavedData(): Promise<number> {
+		const personalError = validatePersonal();
+		if (personalError) {
+			return 1;
+		}
+
+		const deliveryError = validateDeliveryFields();
+		if (deliveryError) {
+			return 2;
+		}
+
+		const coverageError = await validateDeliveryCoverage();
+		if (coverageError) {
+			errorMessage = coverageError;
+			return 2;
+		}
+
+		return 3;
+	}
+
+	async function startCheckout() {
+		if (!storeIsOpen) {
+			errorMessage = storeClosedMessage;
+			return;
+		}
+
+		errorMessage = '';
+		if (checkoutStorageReady) {
+			checkout.persist($checkout);
+		}
+		const targetStep = await getBestNextStepFromSavedData();
+		await goToStep(targetStep);
+	}
+
+	async function goToStep(targetStep: number) {
+		if (step === 3 && targetStep < 3) {
+			resetPaymentSession();
+		}
+
+		step = targetStep;
+		errorMessage = '';
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 
-		// If moving to payment step, initialize Stripe Elements
 		if (step === 3) {
-			initializePayment();
+			await tick();
+			await initializePayment();
 		}
 	}
 
-	function prevStep() {
-		step -= 1;
-		window.scrollTo({ top: 0, behavior: 'smooth' });
+	async function nextStep() {
+		if (!storeIsOpen) {
+			errorMessage = storeClosedMessage;
+			return;
+		}
+
+		if (step === 1) {
+			const personalError = validatePersonal();
+			if (personalError) {
+				errorMessage = personalError;
+				return;
+			}
+		}
+
+		if (step === 2) {
+			const deliveryError = validateDeliveryFields();
+			if (deliveryError) {
+				errorMessage = deliveryError;
+				return;
+			}
+
+			const coverageError = await validateDeliveryCoverage();
+			if (coverageError) {
+				errorMessage = coverageError;
+				return;
+			}
+		}
+
+		errorMessage = '';
+		if (checkoutStorageReady) {
+			checkout.persist($checkout);
+		}
+		await goToStep(step + 1);
+	}
+
+	async function prevStep() {
+		if (step === 0) return;
+		await goToStep(step - 1);
 	}
 
 	async function initializePayment() {
-		if (!stripe) return;
-		loading = true;
+		if (!stripe || clientSecret || $cart.length === 0) return;
+		if (!storeIsOpen) {
+			errorMessage = storeClosedMessage;
+			return;
+		}
 
-		// Calculate amount in cents
-		const amount = Math.round($cartTotal * 100);
+		const personalError = validatePersonal();
+		if (personalError) {
+			errorMessage = personalError;
+			return;
+		}
+
+		const deliveryError = validateDeliveryFields();
+		if (deliveryError) {
+			errorMessage = deliveryError;
+			return;
+		}
+
+		const coverageError = await validateDeliveryCoverage();
+		if (coverageError) {
+			errorMessage = coverageError;
+			return;
+		}
+
+		loading = true;
+		errorMessage = '';
 
 		try {
 			const res = await fetch('/api/create-payment-intent', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ amount })
+				body: JSON.stringify(createRequestPayload())
 			});
-			const result = await res.json();
-			clientSecret = result.clientSecret;
 
-			if (clientSecret) {
-				const appearance = {
-					theme: 'stripe',
-					variables: {
-						colorPrimary: '#214593',
-						colorBackground: '#ffffff',
-						colorText: '#30313d',
-						colorDanger: '#df1b41'
-					}
-				};
-				elements = stripe.elements({ appearance, clientSecret });
-				const paymentElement = elements.create('payment');
-				paymentElement.mount('#payment-element');
+			const result = await res.json();
+			if (!res.ok) {
+				throw new Error(result?.error || 'No se pudo inicializar el pago.');
 			}
-		} catch (err) {
-			console.error(err);
-			errorMessage = 'Ocurrió un error al cargar el pago.';
+
+			clientSecret = result.clientSecret;
+			paymentIntentId = result.paymentIntentId;
+			orderPublicId = result.orderPublicId;
+			trackingToken = result.trackingToken;
+
+			if (!clientSecret || !orderPublicId || !trackingToken) {
+				throw new Error('La pasarela no devolvió todos los datos del pedido.');
+			}
+
+			paymentElement?.destroy();
+			const appearance = {
+				theme: 'stripe' as const,
+				variables: {
+					colorPrimary: '#214593',
+					colorBackground: '#ffffff',
+					colorText: '#30313d',
+					colorDanger: '#df1b41'
+				}
+			};
+
+			elements = stripe.elements({ appearance, clientSecret });
+			paymentElement = elements.create('payment');
+			paymentElement.mount('#payment-element');
+		} catch (error) {
+			console.error(error);
+			errorMessage = error instanceof Error ? error.message : 'Ocurrió un error al cargar el pago.';
+			resetPaymentSession();
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function handleSubmit() {
-		if (!stripe || !elements) return;
+		if (!storeIsOpen) {
+			errorMessage = storeClosedMessage;
+			return;
+		}
+
+		if (!stripe || !elements || !orderPublicId || !trackingToken) {
+			errorMessage = 'No se pudo preparar el pago. Recarga la página e inténtalo de nuevo.';
+			return;
+		}
 
 		loading = true;
 		errorMessage = '';
 
 		const { error, paymentIntent } = await stripe.confirmPayment({
 			elements,
-			redirect: 'if_required' // We handle the redirect manually after order creation
+			redirect: 'if_required'
 		});
 
 		if (error) {
-			// Check specific error types
-			if (error.type === 'card_error' || error.type === 'validation_error') {
-				errorMessage = error.message || 'Error en el pago';
-			} else {
-				errorMessage = 'Un error inesperado ocurrió.';
-			}
+			errorMessage =
+				error.type === 'card_error' || error.type === 'validation_error'
+					? error.message || 'Error en el pago'
+					: 'Un error inesperado ocurrió durante el pago.';
 			loading = false;
-		} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-			// Payment Successful -> Create Order
-			try {
-				const orderData = {
-					customer: {
-						firstName: $checkout.firstName,
-						lastName: $checkout.lastName,
-						email: $checkout.email,
-						phone: $checkout.phone
-					},
-					delivery: {
-						method: $checkout.method,
-						address: $checkout.address,
-						city: $checkout.city,
-						zip: $checkout.zip
-					},
-					items: $cart.map((item) => ({
-						name: item.title,
-						quantity: item.quantity,
-						price: item.price,
-						type: item.type,
-						total: item.price * item.quantity
-					})),
-					totalAmount: $cartTotal,
-					stripePaymentId: paymentIntent.id
-				};
-
-				const res = await fetch('/api/create-order', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(orderData)
-				});
-
-				if (res.ok) {
-					// Success -> Redirect
-					window.location.href = '/success';
-				} else {
-					errorMessage =
-						'El pago se realizó, pero hubo un error creando el pedido. Contacte con nosotros.';
-					loading = false;
-				}
-			} catch (e) {
-				console.error(e);
-				errorMessage = 'Error de conexión creando el pedido.';
-				loading = false;
-			}
-		} else {
-			loading = false;
+			return;
 		}
+
+		if (
+			paymentIntent &&
+			['succeeded', 'processing', 'requires_capture'].includes(paymentIntent.status)
+		) {
+			trackCompletedOrder($cart);
+
+			if (paymentIntent.status === 'succeeded') {
+				try {
+					await fetch('/api/orders/confirm-payment', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ paymentIntentId: paymentIntent.id })
+					});
+				} catch (syncError) {
+					console.error('Error syncing paid order:', syncError);
+				}
+			}
+
+			window.location.href = `/success?orderPublicId=${encodeURIComponent(orderPublicId)}&t=${encodeURIComponent(trackingToken)}`;
+			return;
+		}
+
+		loading = false;
+		errorMessage =
+			'El pago no pudo confirmarse todavía. Por favor, revisa el estado e inténtalo nuevamente.';
 	}
 </script>
 
@@ -254,6 +458,10 @@
 		</div>
 	{/if}
 
+	{#if errorMessage && step < 3}
+		<div class="mx-4 mb-4 rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">{errorMessage}</div>
+	{/if}
+
 	{#if $cart.length === 0}
 		<div class="text-center py-12">
 			<p class="text-gray-500 mb-4">No tienes productos en el carrito.</p>
@@ -278,12 +486,21 @@
 									<span class="text-xl font-bold text-gray-800">Total</span>
 									<span class="text-2xl font-bold text-[#214593]">{$cartTotal.toFixed(2)}€</span>
 								</div>
+								{#if !storeIsOpen}
+									<div
+										class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+									>
+										{storeClosedMessage}
+									</div>
+								{/if}
 
 								<button
 									on:click={startCheckout}
-									class="w-full rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+									disabled={!storeIsOpen}
+									class="w-full rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
+									type="button"
 								>
-									Continuar con el pedido
+									{storeIsOpen ? 'Continuar con el pedido' : 'Tienda cerrada'}
 								</button>
 							</div>
 						</div>
@@ -294,6 +511,7 @@
 							<button
 								on:click={nextStep}
 								class="w-full mt-8 rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg"
+								type="button"
 							>
 								Continuar
 							</button>
@@ -309,18 +527,27 @@
 									{ label: 'Email', value: $checkout.email },
 									{ label: 'Teléfono', value: $checkout.phone }
 								]}
-								on:edit={() => {
-									step = 1;
-									window.scrollTo({ top: 0, behavior: 'smooth' });
-								}}
+								on:edit={() => goToStep(1)}
 							/>
 
-							<Step2Delivery bind:data={$checkout} />
+							<Step2Delivery
+								bind:data={$checkout}
+								checkingDistance={checkingDeliveryCoverage}
+								distanceKm={deliveryDistanceKm}
+							/>
 							<button
 								on:click={nextStep}
+								disabled={checkingDeliveryCoverage || !storeIsOpen}
 								class="w-full mt-8 rounded-xl bg-[#214593] py-4 text-center text-lg font-bold text-white shadow-lg"
+								type="button"
 							>
-								Continuar al Pago
+								{#if !storeIsOpen}
+									Tienda cerrada
+								{:else if checkingDeliveryCoverage}
+									Validando cobertura...
+								{:else}
+									Continuar al Pago
+								{/if}
 							</button>
 						</div>
 					{:else if step === 3}
@@ -335,10 +562,7 @@
 										{ label: 'Email', value: $checkout.email },
 										{ label: 'Teléfono', value: $checkout.phone }
 									]}
-									on:edit={() => {
-										step = 1;
-										window.scrollTo({ top: 0, behavior: 'smooth' });
-									}}
+									on:edit={() => goToStep(1)}
 								/>
 
 								<InfoSummary
@@ -356,19 +580,14 @@
 												]
 											: [])
 									]}
-									on:edit={() => {
-										step = 2;
-										window.scrollTo({ top: 0, behavior: 'smooth' });
-									}}
+									on:edit={() => goToStep(2)}
 								/>
 							</div>
 
 							<Step3Payment bind:data={$checkout} />
 
 							{#if errorMessage}
-								<div class="text-red-600 bg-red-50 p-3 rounded-lg text-sm mt-4">
-									{errorMessage}
-								</div>
+								<div class="text-red-600 bg-red-50 p-3 rounded-lg text-sm mt-4">{errorMessage}</div>
 							{/if}
 
 							<div class="mt-8 border-t border-gray-100 pt-6">
@@ -378,10 +597,17 @@
 								</div>
 								<button
 									on:click={handleSubmit}
-									disabled={loading || !stripe || !elements}
+									disabled={loading || !stripe || !elements || !paymentIntentId || !storeIsOpen}
 									class="w-full rounded-xl bg-[#FABE40] py-4 text-center text-lg font-bold text-[#214593] shadow-lg hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
+									type="button"
 								>
-									{loading ? 'Procesando...' : 'Pagar y Finalizar'}
+									{#if !storeIsOpen}
+										Tienda cerrada
+									{:else if loading}
+										Procesando...
+									{:else}
+										Pagar y Finalizar
+									{/if}
 								</button>
 							</div>
 						</div>
@@ -390,7 +616,6 @@
 			{/key}
 		</div>
 
-		<!-- Cross-sell Bebidas (Fuera del carrito, step 0) -->
 		{#if step === 0 && data.drinks && data.drinks.length > 0}
 			<div class="mt-8">
 				<h3 class="text-lg font-bold text-gray-800 mb-4 px-2">¿Quieres añadir algo de beber?</h3>
