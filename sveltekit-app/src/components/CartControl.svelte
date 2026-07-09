@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { ORDER_ITEM_TYPE } from '@bodega-la-pascuala/contracts';
 	import { cart } from '$lib/stores/cart';
+	import type { OrderItemType } from '$lib/types/order';
 	import { scale } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
 	export let id: string;
 	export let title: string;
 	export let price: number;
-	export let type: 'half' | 'full' | 'drink';
+	export let type: OrderItemType;
 
 	$: quantity = $cart.find((i) => i.id === id && i.type === type)?.quantity || 0;
 
@@ -25,17 +27,17 @@
 </script>
 
 <div class="flex flex-col items-start gap-1">
-	{#if type !== 'drink'}
+	{#if type !== ORDER_ITEM_TYPE.drink}
 		<span class="text-[10px] font-bold uppercase tracking-wider text-[#214593] ml-1">
-			{type === 'half' ? 'Medio' : 'Entero'}
+			{type === ORDER_ITEM_TYPE.half ? 'Medio' : 'Entero'}
 		</span>
 	{/if}
 
 	<div
 		class="flex items-center gap-2 rounded-full px-2 py-2 transition-all duration-300 shadow-sm {type ===
-		'half'
+		ORDER_ITEM_TYPE.half
 			? 'bg-brand-yellow/20 text-[#214593] border border-[#214593]'
-			: type === 'drink'
+			: type === ORDER_ITEM_TYPE.drink
 				? 'bg-[#214593] text-white border'
 				: 'bg-[#214593] text-white border'}"
 	>
@@ -43,9 +45,9 @@
 			<div transition:scale={{ duration: 200, easing: cubicOut, start: 0.5 }} class="flex">
 				<button
 					class="flex h-5 w-5 items-center justify-center rounded-full transition-transform hover:scale-110 {type ===
-					'half'
+					ORDER_ITEM_TYPE.half
 						? 'bg-white text-[#214593] hover:bg-white/80'
-						: type === 'drink'
+						: type === ORDER_ITEM_TYPE.drink
 							? 'bg-white text-[#214593] hover:bg-white/90'
 							: 'bg-white text-[#214593] hover:bg-gray-200'}"
 					on:click|preventDefault={removeFromCart}
@@ -74,9 +76,9 @@
 
 		<button
 			class="flex h-5 w-5 items-center justify-center rounded-full transition-transform hover:scale-110 {type ===
-			'half'
+			ORDER_ITEM_TYPE.half
 				? 'bg-brand-yellow text-brand-blue hover:bg-brand-yellow/80'
-				: type === 'drink'
+				: type === ORDER_ITEM_TYPE.drink
 					? 'bg-white text-black hover:bg-gray-200'
 					: 'bg-white text-black hover:bg-gray-200'}"
 			on:click|preventDefault={addToCart}

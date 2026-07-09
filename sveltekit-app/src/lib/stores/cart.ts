@@ -1,9 +1,10 @@
-import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
+import type { OrderItemType } from '$lib/types/order';
+import { derived, writable } from 'svelte/store';
 
 export interface CartItem {
 	id: string; // Sanity _id
-	type: 'half' | 'full' | 'drink'; // 'media', 'entero', 'bebida'
+	type: OrderItemType; // 'half', 'full', 'drink'
 	title: string;
 	price: number;
 	quantity: number;
@@ -45,7 +46,7 @@ function createCart() {
 				return newItems;
 			});
 		},
-		removeItem: (id: string, type: 'half' | 'full' | 'drink') => {
+		removeItem: (id: string, type: OrderItemType) => {
 			update((items) => {
 				const existingItemIndex = items.findIndex((i) => i.id === id && i.type === type);
 				let newItems = items;
@@ -64,7 +65,7 @@ function createCart() {
 				return newItems;
 			});
 		},
-		deleteItem: (id: string, type: 'half' | 'full' | 'drink') => {
+		deleteItem: (id: string, type: OrderItemType) => {
 			update((items) => {
 				const newItems = items.filter((i) => !(i.id === id && i.type === type));
 				if (browser) localStorage.setItem('pascuala_cart', JSON.stringify(newItems));

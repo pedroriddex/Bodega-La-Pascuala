@@ -23,6 +23,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local tooling artifacts
+.playwright-cli
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

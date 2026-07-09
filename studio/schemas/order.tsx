@@ -1,29 +1,35 @@
+import {
+  ORDER_ITEM_TYPE,
+  ORDER_STATUS,
+  ORDER_STATUS_VALUES,
+  type OrderStatus,
+} from '@bodega-la-pascuala/contracts'
 import {BasketIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 import {QuickStatusActionsInput} from '../components/order/QuickStatusActionsInput'
 
-const statusColors = {
-  pending_payment: '#8e8e93',
-  paid: '#8e8e93',
-  preparing: '#ff3b30',
-  shipped: '#ff9500',
-  completed: '#34c759',
-  cancelled: '#000000',
+const statusColors: Record<OrderStatus, string> = {
+  [ORDER_STATUS.pendingPayment]: '#8e8e93',
+  [ORDER_STATUS.paid]: '#8e8e93',
+  [ORDER_STATUS.preparing]: '#ff3b30',
+  [ORDER_STATUS.shipped]: '#ff9500',
+  [ORDER_STATUS.completed]: '#34c759',
+  [ORDER_STATUS.cancelled]: '#000000',
 } as const
 
-const statusLabels = {
-  pending_payment: 'Pago pendiente',
-  paid: 'Pagado',
-  preparing: 'En preparación',
-  shipped: 'Enviado',
-  completed: 'Completado',
-  cancelled: 'Cancelado',
+const statusLabels: Record<OrderStatus, string> = {
+  [ORDER_STATUS.pendingPayment]: 'Pago pendiente',
+  [ORDER_STATUS.paid]: 'Pagado',
+  [ORDER_STATUS.preparing]: 'En preparación',
+  [ORDER_STATUS.shipped]: 'Enviado',
+  [ORDER_STATUS.completed]: 'Completado',
+  [ORDER_STATUS.cancelled]: 'Cancelado',
 } as const
 
 function itemTypeLabel(type: string | undefined) {
-  if (type === 'half') return 'Medio'
-  if (type === 'full') return 'Entero'
-  if (type === 'drink') return 'Bebida'
+  if (type === ORDER_ITEM_TYPE.half) return 'Medio'
+  if (type === ORDER_ITEM_TYPE.full) return 'Entero'
+  if (type === ORDER_ITEM_TYPE.drink) return 'Bebida'
   return 'Producto'
 }
 
@@ -187,16 +193,12 @@ export default defineType({
       title: 'Estado',
       type: 'string',
       options: {
-        list: [
-          {title: 'Pago pendiente', value: 'pending_payment'},
-          {title: 'Pagado', value: 'paid'},
-          {title: 'En Preparación', value: 'preparing'},
-          {title: 'Enviado', value: 'shipped'},
-          {title: 'Completado', value: 'completed'},
-          {title: 'Cancelado', value: 'cancelled'},
-        ],
+        list: ORDER_STATUS_VALUES.map((status: OrderStatus) => ({
+          title: statusLabels[status],
+          value: status,
+        })),
       },
-      initialValue: 'pending_payment',
+      initialValue: ORDER_STATUS.pendingPayment,
       validation: (rule) => rule.required(),
     }),
     defineField({
@@ -232,8 +234,8 @@ export default defineType({
       const {title, publicId, customerName, customerSurname, status, total} = selection
       const statusKey =
         typeof status === 'string' && status in statusLabels
-          ? (status as keyof typeof statusLabels)
-          : 'pending_payment'
+          ? (status as OrderStatus)
+          : ORDER_STATUS.pendingPayment
 
       return {
         title: title || publicId || 'Pedido sin número',

@@ -1,3 +1,9 @@
+import {
+	CHECKOUT_INTENT_DOCUMENT_TYPE,
+	CHECKOUT_INTENT_ID_PREFIX,
+	STRIPE_ORDER_METADATA_KEYS,
+	type CheckoutIntentDocument
+} from '@bodega-la-pascuala/contracts';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import Stripe from 'stripe';
@@ -6,20 +12,24 @@ import { RequestError } from '$lib/server/http-error';
 import { parseCheckoutPayload } from '$lib/server/orders/checkout-payload';
 import { generateOrderNumber, generateOrderPublicId } from '$lib/server/orders/utils';
 import { buildCanonicalOrder } from '$lib/server/pricing/catalog';
-import { getStripeConfig, getTrackingConfig } from '$lib/server/config';
+import { getStripeClientConfig, getTrackingConfig } from '$lib/server/config';
 import { createTrackingToken } from '$lib/server/security/tracking-token';
 import { validateDeliveryCoverage } from '$lib/server/delivery/radius';
 import { getStoreStatus } from '$lib/server/store/status';
+import { enforceRateLimit } from '$lib/server/security/rate-limit';
 
-const stripeConfig = getStripeConfig();
+const stripeConfig = getStripeClientConfig();
 const trackingConfig = getTrackingConfig();
 
 const stripe = new Stripe(stripeConfig.stripeSecretKey, {
 	apiVersion: '2026-01-28.clover'
 });
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
+	const { request } = event;
 	try {
+		await enforceRateLimit(event, 'create-payment-intent', { limit: 8, windowMs: 60_000 });
+
 		const storeStatus = await getStoreStatus();
 		if (!storeStatus.isOpen) {
 			throw new RequestError(403, 'store_closed', storeStatus.closedMessage);
@@ -32,11 +42,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		const orderPublicId = generateOrderPublicId();
 		const orderNumber = generateOrderNumber();
 		const createdAt = new Date().toISOString();
-		const checkoutIntentId = `checkoutIntent-${orderPublicId}`;
-
-		await writeClient.create({
+		const checkoutIntentId = `${CHECKOUT_INTENT_ID_PREFIX}${orderPublicId}`;
+		const checkoutIntentDocument: CheckoutIntentDocument & { _id: string } = {
 			_id: checkoutIntentId,
-			_type: 'checkoutIntent',
+			_type: CHECKOUT_INTENT_DOCUMENT_TYPE,
 			orderPublicId,
 			orderNumber,
 			customer: payload.customer,
@@ -45,7 +54,9 @@ export const POST: RequestHandler = async ({ request }) => {
 			totalAmount: canonicalOrder.totalAmount,
 			notes: payload.notes,
 			createdAt
-		});
+		};
+
+		await writeClient.create(checkoutIntentDocument);
 
 		let paymentIntent: Stripe.PaymentIntent;
 		try {
@@ -57,9 +68,9 @@ export const POST: RequestHandler = async ({ request }) => {
 						enabled: true
 					},
 					metadata: {
-						orderPublicId,
-						checkoutIntentId,
-						orderNumber
+						[STRIPE_ORDER_METADATA_KEYS.orderPublicId]: orderPublicId,
+						[STRIPE_ORDER_METADATA_KEYS.checkoutIntentId]: checkoutIntentId,
+						[STRIPE_ORDER_METADATA_KEYS.orderNumber]: orderNumber
 					}
 				},
 				{
@@ -101,7 +112,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 	} catch (error) {
 		if (error instanceof RequestError) {
-			return json({ error: error.message, code: error.code }, { status: error.status });
+			return json(
+				{ error: error.message, code: error.code },
+				{ status: error.status, headers: error.headers }
+			);
 		}
 
 		console.error('Error creating payment intent:', error);

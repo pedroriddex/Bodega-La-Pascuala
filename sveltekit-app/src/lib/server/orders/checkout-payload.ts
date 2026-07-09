@@ -1,3 +1,4 @@
+import { ORDER_ITEM_TYPE_VALUES } from '@bodega-la-pascuala/contracts';
 import type {
 	CheckoutCustomerInput,
 	CheckoutDeliveryInput,
@@ -12,7 +13,7 @@ const CUSTOMER_ALLOWED_KEYS = new Set(['firstName', 'lastName', 'email', 'phone'
 const DELIVERY_ALLOWED_KEYS = new Set(['method', 'address', 'city', 'zip']);
 const ROOT_ALLOWED_KEYS = new Set(['items', 'customer', 'delivery', 'notes']);
 
-const ITEM_TYPES: OrderItemType[] = ['half', 'full', 'drink'];
+const ITEM_TYPES = new Set<OrderItemType>(ORDER_ITEM_TYPE_VALUES);
 
 function assertObject(value: unknown, path: string): Record<string, unknown> {
 	if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -62,7 +63,7 @@ function parseItems(value: unknown): CheckoutItemInput[] {
 		const type = readString(item.type, `items[${index}].type`) as OrderItemType;
 		const quantity = item.quantity;
 
-		if (!ITEM_TYPES.includes(type)) {
+		if (!ITEM_TYPES.has(type)) {
 			throw new RequestError(400, 'invalid_items', `Invalid item type at items[${index}]`);
 		}
 

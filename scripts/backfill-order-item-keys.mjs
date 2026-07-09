@@ -1,44 +1,10 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs'
-import path from 'node:path'
 import process from 'node:process'
 import { createHash } from 'node:crypto'
-import { createClient } from '@sanity/client'
-
-const envPath = path.resolve(process.cwd(), 'sveltekit-app/.env')
-
-function loadEnv(filePath) {
-  if (!fs.existsSync(filePath)) return
-
-  for (const line of fs.readFileSync(filePath, 'utf8').split(/\r?\n/u)) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-
-    const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/u)
-    if (!match) continue
-
-    const key = match[1]
-    let value = match[2] || ''
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1)
-    }
-
-    if (process.env[key] === undefined) {
-      process.env[key] = value
-    }
-  }
-}
-
-function required(name, value) {
-  if (!value || value.trim().length === 0) {
-    throw new Error(`Missing required environment variable: ${name}`)
-  }
-  return value.trim()
-}
+import { pathToFileURL } from 'node:url'
+import { loadRealWorkspaceEnv } from './lib/env.mjs'
+import { createWriteClient } from './lib/sanity.mjs'
 
 function buildItemKey(orderPublicId, item, index) {
   const seed = `${orderPublicId}:${index}:${item?.productId || 'item'}:${item?.type || 'unknown'}`
@@ -62,20 +28,23 @@ function createUniqueItemKey(orderPublicId, item, index, usedKeys) {
   return key
 }
 
-function normalizeOrderItems(orderPublicId, items) {
+export function normalizeOrderItems(orderPublicId, items) {
   const usedKeys = new Set()
   let changed = false
 
   const normalized = items.map((item, index) => {
     const source = item && typeof item === 'object' ? item : {}
-    const keyCandidate = typeof source._key === 'string' ? source._key.trim() : ''
-    const hasValidCandidate = keyCandidate.length > 0 && !usedKeys.has(keyCandidate)
+    const keyCandidate =
+      typeof source._key === 'string' ? source._key.trim() : ''
+    const hasValidCandidate =
+      keyCandidate.length > 0 && !usedKeys.has(keyCandidate)
     const key = hasValidCandidate
       ? keyCandidate
       : createUniqueItemKey(orderPublicId, source, index, usedKeys)
     usedKeys.add(key)
 
-    const typeCandidate = typeof source._type === 'string' ? source._type.trim() : ''
+    const typeCandidate =
+      typeof source._type === 'string' ? source._type.trim() : ''
     const type = typeCandidate.length > 0 ? typeCandidate : 'object'
 
     if (keyCandidate !== key || typeCandidate !== type) {
@@ -92,30 +61,10 @@ function normalizeOrderItems(orderPublicId, items) {
   return { changed, items: normalized }
 }
 
-async function run() {
-  loadEnv(envPath)
+export async function run({ dryRun = false } = {}) {
+  loadRealWorkspaceEnv('sveltekit-app')
 
-  const projectId = required(
-    'PUBLIC_SANITY_PROJECT_ID or SANITY_STUDIO_PROJECT_ID',
-    process.env.PUBLIC_SANITY_PROJECT_ID ||
-      process.env.SANITY_STUDIO_PROJECT_ID,
-  )
-  const dataset = required(
-    'PUBLIC_SANITY_DATASET or SANITY_STUDIO_DATASET',
-    process.env.PUBLIC_SANITY_DATASET || process.env.SANITY_STUDIO_DATASET,
-  )
-  const token = required(
-    'SANITY_API_WRITE_TOKEN',
-    process.env.SANITY_API_WRITE_TOKEN,
-  )
-
-  const client = createClient({
-    projectId,
-    dataset,
-    token,
-    useCdn: false,
-    apiVersion: '2024-03-15',
-  }).withConfig({
+  const client = createWriteClient(process.env).withConfig({
     perspective: 'raw',
   })
 
@@ -146,9 +95,11 @@ async function run() {
       continue
     }
 
-    await client.patch(order._id).set({ items: normalized.items }).commit()
+    if (!dryRun) {
+      await client.patch(order._id).set({ items: normalized.items }).commit()
+    }
     updated += 1
-    console.log(`Updated ${order._id}`)
+    console.log(`${dryRun ? '[dry-run] ' : ''}Updated ${order._id}`)
   }
 
   if (updated === 0) {
@@ -156,10 +107,20 @@ async function run() {
     return
   }
 
-  console.log(`Done. Updated ${updated} order(s).`)
+  console.log(
+    dryRun
+      ? `Dry-run completed. ${updated} order(s) would be updated. No changes were written.`
+      : `Done. Updated ${updated} order(s).`,
+  )
 }
 
-run().catch((error) => {
-  console.error('Backfill failed:', error)
-  process.exitCode = 1
-})
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  const dryRun = process.argv.includes('--dry-run')
+  run({ dryRun }).catch((error) => {
+    console.error('Backfill failed:', error)
+    process.exitCode = 1
+  })
+}

@@ -1,4 +1,3 @@
-import type { PortableTextBlock } from '@portabletext/types';
 import groq from 'groq';
 
 export const sandwichesQuery = groq`*[_type == "sandwich"] | order(_createdAt desc)`;

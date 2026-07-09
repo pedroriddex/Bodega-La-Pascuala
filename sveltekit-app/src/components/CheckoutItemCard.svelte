@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ORDER_ITEM_TYPE } from '@bodega-la-pascuala/contracts';
 	import { cart } from '$lib/stores/cart';
 	import type { CartItem } from '$lib/stores/cart';
 
@@ -23,7 +24,7 @@
 >
 	<div class="flex flex-col">
 		<span class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-			{item.type === 'half' ? 'Medio' : 'Entero'}
+			{item.type === ORDER_ITEM_TYPE.half ? 'Medio' : 'Entero'}
 		</span>
 		<h3 class="font-bold text-[#214593] text-lg leading-tight mb-2">{item.title}</h3>
 

@@ -1,6 +1,5 @@
 {
-  "extends": [
-    "@sanity/eslint-config-studio",
-    "@babel/core"
-  ]
+  "root": true,
+  "extends": ["@sanity/eslint-config-studio"],
+  "ignorePatterns": ["dist", "coverage", "node_modules"]
 }

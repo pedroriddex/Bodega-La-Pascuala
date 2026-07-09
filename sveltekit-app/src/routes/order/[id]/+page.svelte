@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ORDER_STATUS } from '@bodega-la-pascuala/contracts';
 	import { onMount } from 'svelte';
 	import { formatDate } from '$lib/utils';
 	import type { PageData } from './$types';
@@ -13,25 +14,25 @@
 	let completeErrorMessage = '';
 
 	const steps = [
-		{ id: 'paid', label: 'Pagado', icon: 'ri-money-euro-circle-line' },
-		{ id: 'preparing', label: 'En preparación', icon: 'ri-restaurant-line' },
-		{ id: 'shipped', label: 'Enviado', icon: 'ri-truck-line' },
-		{ id: 'completed', label: 'Completado', icon: 'ri-check-double-line' }
+		{ id: ORDER_STATUS.paid, label: 'Pagado', icon: 'ri-money-euro-circle-line' },
+		{ id: ORDER_STATUS.preparing, label: 'En preparación', icon: 'ri-restaurant-line' },
+		{ id: ORDER_STATUS.shipped, label: 'Enviado', icon: 'ri-truck-line' },
+		{ id: ORDER_STATUS.completed, label: 'Completado', icon: 'ri-check-double-line' }
 	];
 
 	const statusMap: Record<string, number> = {
-		pending_payment: 0,
-		paid: 0,
-		preparing: 1,
-		shipped: 2,
-		completed: 3,
-		cancelled: -1
+		[ORDER_STATUS.pendingPayment]: 0,
+		[ORDER_STATUS.paid]: 0,
+		[ORDER_STATUS.preparing]: 1,
+		[ORDER_STATUS.shipped]: 2,
+		[ORDER_STATUS.completed]: 3,
+		[ORDER_STATUS.cancelled]: -1
 	};
 
 	$: currentStep = statusMap[order.status] ?? 0;
 
 	async function markAsReceived() {
-		if (order.status !== 'shipped' || completingOrder) {
+		if (order.status !== ORDER_STATUS.shipped || completingOrder) {
 			return;
 		}
 
@@ -139,7 +140,7 @@
 		</div>
 
 		<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
-			{#if order.status === 'cancelled'}
+			{#if order.status === ORDER_STATUS.cancelled}
 				<div class="text-center p-8 bg-red-50 rounded-xl">
 					<i class="ri-close-circle-line text-4xl text-red-500 mb-2"></i>
 					<h3 class="text-xl font-bold text-red-700">Pedido Cancelado</h3>
@@ -173,7 +174,7 @@
 					{/each}
 				</div>
 
-				{#if order.status === 'pending_payment'}
+				{#if order.status === ORDER_STATUS.pendingPayment}
 					<div class="mt-16 text-center">
 						<p
 							class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg font-bold"
@@ -182,7 +183,7 @@
 							Pago en verificación
 						</p>
 					</div>
-				{:else if order.status === 'completed'}
+				{:else if order.status === ORDER_STATUS.completed}
 					<div class="mt-16 text-center">
 						<div
 							class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg font-bold"
@@ -191,7 +192,7 @@
 							Pedido Completado
 						</div>
 					</div>
-				{:else if order.status === 'shipped'}
+				{:else if order.status === ORDER_STATUS.shipped}
 					<div class="mt-16 text-center">
 						<p class="text-sm text-gray-600 mb-4">
 							¿Has recibido tu pedido? Confírmalo para cerrar el seguimiento.

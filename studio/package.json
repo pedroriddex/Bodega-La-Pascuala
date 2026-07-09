@@ -8,6 +8,8 @@
     "dev": "sanity dev",
     "start": "sanity start",
     "build": "sanity build -y",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "deploy": "sanity deploy",
     "deploy-graphql": "sanity graphql deploy"
   },
@@ -15,6 +17,7 @@
     "sanity"
   ],
   "dependencies": {
+    "@bodega-la-pascuala/contracts": "file:../packages/contracts",
     "@sanity/vision": "^3.66.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

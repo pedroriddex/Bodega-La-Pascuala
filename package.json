@@ -3,14 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
+    "packages/*",
     "sveltekit-app",
     "studio"
   ],
   "scripts": {
     "backfill:order-item-keys": "node scripts/backfill-order-item-keys.mjs",
+    "backfill:order-public-id": "node scripts/backfill-order-public-id.mjs",
+    "build": "node scripts/run-monorepo-task.mjs build",
+    "check": "node scripts/run-monorepo-task.mjs check",
+    "cleanup:checkout-intents": "node scripts/cleanup-checkout-intents.mjs",
     "dev": "concurrently \"npm run dev --workspace=sveltekit-app\" \"npm run dev --workspace=studio\"",
     "format": "prettier --cache --write .",
-    "import:bocadillos": "node scripts/import-bocadillos.mjs"
+    "import:bocadillos": "node scripts/import-bocadillos.mjs",
+    "lint": "node scripts/run-monorepo-task.mjs lint",
+    "test": "node scripts/run-monorepo-task.mjs test",
+    "typecheck": "node scripts/run-monorepo-task.mjs typecheck"
   },
   "prettier": {
     "plugins": [
@@ -20,8 +28,16 @@
     "singleQuote": true
   },
   "devDependencies": {
+    "@sanity/client": "^6.15.4",
     "concurrently": "^9.1.0",
     "prettier": "3.3.3",
-    "prettier-plugin-packagejson": "2.5.1"
+    "prettier-plugin-packagejson": "2.5.1",
+    "stripe": "^20.3.0",
+    "tsx": "^4.20.6"
+  },
+  "packageManager": "npm@11.9.0",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
   }
 }

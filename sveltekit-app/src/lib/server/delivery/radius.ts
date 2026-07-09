@@ -64,6 +64,25 @@ function parseGeoPoint(raw: unknown): GeoPoint | null {
 
 const geocodeCache = new Map<string, GeoPoint>();
 
+// Nominatim's usage policy allows at most ~1 request/second. Serialize outbound
+// calls behind a shared chain so bursts (multiple candidate queries, concurrent
+// users) never exceed that and get the IP banned. Cache hits skip this entirely.
+const NOMINATIM_MIN_INTERVAL_MS = 1100;
+let nominatimChain: Promise<void> = Promise.resolve();
+let lastNominatimAt = 0;
+
+function throttleNominatim(): Promise<void> {
+	const run = nominatimChain.then(async () => {
+		const waitMs = lastNominatimAt + NOMINATIM_MIN_INTERVAL_MS - Date.now();
+		if (waitMs > 0) {
+			await new Promise((resolve) => setTimeout(resolve, waitMs));
+		}
+		lastNominatimAt = Date.now();
+	});
+	nominatimChain = run.catch(() => undefined);
+	return run;
+}
+
 function buildViewboxForStore(radiusKm: number): string {
 	const latDelta = radiusKm / 111;
 	const lonDelta = radiusKm / (111 * Math.cos(toRadians(STORE_LOCATION.lat)));
@@ -115,6 +134,8 @@ async function requestNominatim(
 			return cached;
 		}
 	}
+
+	await throttleNominatim();
 
 	const timeout = AbortSignal.timeout(5000);
 

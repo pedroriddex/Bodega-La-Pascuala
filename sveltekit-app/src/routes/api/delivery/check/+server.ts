@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { DELIVERY_MAX_DISTANCE_KM, STORE_LOCATION } from '$lib/config/delivery';
 import { RequestError } from '$lib/server/http-error';
 import { validateDeliveryCoverage } from '$lib/server/delivery/radius';
+import { enforceRateLimit } from '$lib/server/security/rate-limit';
 
 function assertObject(value: unknown): Record<string, unknown> {
 	if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -18,8 +19,11 @@ function readString(value: unknown, fieldName: string): string {
 	return value.trim();
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
+	const { request } = event;
 	try {
+		await enforceRateLimit(event, 'delivery-check', { limit: 15, windowMs: 60_000 });
+
 		const payload = assertObject(await request.json());
 		const address = readString(payload.address, 'address');
 		const city = readString(payload.city, 'city');
@@ -55,7 +59,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					code: error.code,
 					maxDistanceKm: DELIVERY_MAX_DISTANCE_KM
 				},
-				{ status: error.status }
+				{ status: error.status, headers: error.headers }
 			);
 		}
 

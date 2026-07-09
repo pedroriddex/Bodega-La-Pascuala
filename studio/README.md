@@ -1,9 +1,40 @@
-# Sanity Blogging Content Studio
+# Bodega La Pascuala Studio
 
-Congratulations, you have now installed the Sanity Content Studio, an open source real-time content editing environment connected to the Sanity backend.
+Workspace de Sanity Studio para operación y contenido.
 
-Now you can do the following things:
+## Rol dentro del monorepo
 
-- [Read “getting started” in the docs](https://www.sanity.io/docs/introduction/getting-started?utm_source=readme)
-- [Join the community Slack](https://slack.sanity.io/?utm_source=readme)
-- [Extend and build plugins](https://www.sanity.io/docs/content-studio/extending?utm_source=readme)
+- gestiona `storeSettings`, catálogo y `order`
+- consume contratos internos compartidos desde `@bodega-la-pascuala/contracts`
+- incluye el schema interno `checkoutIntent` para evitar drift, pero permanece oculto del desk visible
+
+## Comandos
+
+```bash
+npm run dev --workspace=studio
+npm run lint --workspace=studio
+npm run typecheck --workspace=studio
+npm run build --workspace=studio
+```
+
+## Variables de entorno
+
+Configurar en `/Users/pedrojose/Trabajo/Bodega-La-Pascuala/studio/.env`:
+
+- `SANITY_STUDIO_PROJECT_ID`
+- `SANITY_STUDIO_DATASET`
+- `SANITY_STUDIO_PREVIEW_URL`
+- `SANITY_STUDIO_STUDIO_HOST`
+
+## Restricciones de esta refactorización
+
+- no cambiar desk visible ni operativa visible
+- no introducir nuevos documentos accesibles desde el menú principal
+- no modificar comportamiento editorial existente
+
+## Puntos internos relevantes
+
+- `/Users/pedrojose/Trabajo/Bodega-La-Pascuala/studio/sanity.config.ts`
+- `/Users/pedrojose/Trabajo/Bodega-La-Pascuala/studio/deskStructure.ts`
+- `/Users/pedrojose/Trabajo/Bodega-La-Pascuala/studio/schemas/order.tsx`
+- `/Users/pedrojose/Trabajo/Bodega-La-Pascuala/studio/schemas/checkoutIntent.ts`

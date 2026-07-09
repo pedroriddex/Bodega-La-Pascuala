@@ -13,8 +13,11 @@ interface SanityConfig {
 	sanityWriteToken: string;
 }
 
-interface StripeConfig {
+interface StripeClientConfig {
 	stripeSecretKey: string;
+}
+
+interface StripeWebhookConfig {
 	stripeWebhookSecret: string;
 }
 
@@ -24,7 +27,8 @@ interface TrackingConfig {
 }
 
 let sanityCache: SanityConfig | null = null;
-let stripeCache: StripeConfig | null = null;
+let stripeClientCache: StripeClientConfig | null = null;
+let stripeWebhookCache: StripeWebhookConfig | null = null;
 let trackingCache: TrackingConfig | null = null;
 
 export function getSanityConfig(): SanityConfig {
@@ -38,15 +42,24 @@ export function getSanityConfig(): SanityConfig {
 	return sanityCache;
 }
 
-export function getStripeConfig(): StripeConfig {
-	if (!stripeCache) {
-		stripeCache = {
-			stripeSecretKey: requireEnv('STRIPE_SECRET_KEY', env.STRIPE_SECRET_KEY),
+export function getStripeClientConfig(): StripeClientConfig {
+	if (!stripeClientCache) {
+		stripeClientCache = {
+			stripeSecretKey: requireEnv('STRIPE_SECRET_KEY', env.STRIPE_SECRET_KEY)
+		};
+	}
+
+	return stripeClientCache;
+}
+
+export function getStripeWebhookConfig(): StripeWebhookConfig {
+	if (!stripeWebhookCache) {
+		stripeWebhookCache = {
 			stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET', env.STRIPE_WEBHOOK_SECRET)
 		};
 	}
 
-	return stripeCache;
+	return stripeWebhookCache;
 }
 
 export function getTrackingConfig(): TrackingConfig {

@@ -62,7 +62,9 @@
 		<section class="md:rounded-lg border border-[#f1ddac] bg-[#fff8e8] px-4 py-8 md:p-10">
 			<div class="mb-6 flex items-center justify-center gap-3">
 				<i class="ri-heart-3-fill text-xl text-[#214593]"></i>
-				<h2 class="font-montserrat text-3xl font-black uppercase tracking-tight text-[#214593] text-center">
+				<h2
+					class="font-montserrat text-3xl font-black uppercase tracking-tight text-[#214593] text-center"
+				>
 					Lo que te gusta
 				</h2>
 			</div>

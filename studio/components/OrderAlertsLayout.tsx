@@ -1,3 +1,4 @@
+import {ORDER_STATUS} from '@bodega-la-pascuala/contracts'
 import {useCallback, useEffect, useMemo, useRef, useState, type CSSProperties} from 'react'
 import {useClient, type LayoutProps} from 'sanity'
 
@@ -27,7 +28,8 @@ interface OrderAlertItem {
 }
 
 const ALERTS_STORAGE_KEY = 'pascuala_order_alerts'
-const LISTEN_QUERY = `*[_type == "order" && status == "paid"]{
+const ACK_STORAGE_KEY = 'pascuala_order_alerts_ack'
+const LISTEN_QUERY = `*[_type == "order" && status == "${ORDER_STATUS.paid}"]{
   _id,
   orderNumber,
   totalAmount,
@@ -92,6 +94,36 @@ function saveAlerts(alerts: OrderAlertItem[]) {
   }
 
   window.localStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(alerts))
+}
+
+// Order ids the kitchen already acknowledged ("Oído cocina"). Persisted so a
+// reconcile against the DB doesn't resurrect an alert that's still `paid` but
+// was already seen. Pruned to currently-paid ids on each reconcile.
+function loadAckIds(): string[] {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  const raw = window.localStorage.getItem(ACK_STORAGE_KEY)
+  if (!raw) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch (error) {
+    console.error('Error loading acknowledged order alerts from storage', error)
+    return []
+  }
+}
+
+function saveAckIds(ids: string[]) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify(ids))
 }
 
 function formatTime(value: string): string {
@@ -188,13 +220,56 @@ function OrderAlertsOverlay() {
   const client = useClient({apiVersion: '2024-03-15'})
   const [alerts, setAlerts] = useState<OrderAlertItem[]>([])
   const knownIdsRef = useRef<Set<string>>(new Set())
+  const ackIdsRef = useRef<Set<string>>(new Set())
   const [busyAlertIds, setBusyAlertIds] = useState<Record<string, boolean>>({})
 
+  // Initial load: show whatever was cached immediately, then reconcile against
+  // the DB so we (a) surface paid orders that arrived while the Studio was
+  // closed and (b) drop alerts for orders that already left the paid state,
+  // while respecting acknowledgements that are still paid.
   useEffect(() => {
+    let cancelled = false
+    ackIdsRef.current = new Set(loadAckIds())
+
     const stored = loadStoredAlerts()
     setAlerts(stored)
-    knownIdsRef.current = new Set(stored.map((item) => item.id))
-  }, [])
+    knownIdsRef.current = new Set([...stored.map((item) => item.id), ...ackIdsRef.current])
+
+    client
+      .fetch<OrderAlertDoc[]>(LISTEN_QUERY)
+      .then((paidOrders) => {
+        if (cancelled) {
+          return
+        }
+
+        const paidIds = new Set<string>()
+        const reconciled: OrderAlertItem[] = []
+        for (const doc of paidOrders || []) {
+          const item = createAlertItem(doc)
+          if (!item) {
+            continue
+          }
+          paidIds.add(item.id)
+          if (!ackIdsRef.current.has(item.id)) {
+            reconciled.push(item)
+          }
+        }
+
+        // Forget acknowledgements for orders that are no longer paid.
+        ackIdsRef.current = new Set([...ackIdsRef.current].filter((id) => paidIds.has(id)))
+        saveAckIds([...ackIdsRef.current])
+
+        knownIdsRef.current = new Set([...paidIds, ...ackIdsRef.current])
+        setAlerts(reconciled)
+      })
+      .catch((error: unknown) => {
+        console.error('Error reconciling order alerts against the database', error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [client])
 
   useEffect(() => {
     saveAlerts(alerts)
@@ -207,22 +282,36 @@ function OrderAlertsOverlay() {
       .listen<OrderAlertDoc>(LISTEN_QUERY, {}, {includeResult: true, visibility: 'query'})
       .subscribe({
         next: (event) => {
-          if (event.type !== 'mutation' || event.transition !== 'appear') {
+          if (event.type !== 'mutation') {
             return
           }
 
-          const payload = event.result as OrderAlertDoc | undefined
-          const alert = createAlertItem(payload || {})
-          if (!alert) {
+          if (event.transition === 'appear') {
+            const payload = event.result as OrderAlertDoc | undefined
+            const alert = createAlertItem(payload || {})
+            if (!alert || knownIdsRef.current.has(alert.id)) {
+              return
+            }
+
+            knownIdsRef.current.add(alert.id)
+            setAlerts((current) => [...current, alert])
             return
           }
 
-          if (knownIdsRef.current.has(alert.id)) {
-            return
-          }
+          // Order left the paid set (e.g. moved to preparing from another
+          // device): drop any local alert so it doesn't keep ringing.
+          if (event.transition === 'disappear') {
+            const id = event.documentId
+            if (!id) {
+              return
+            }
 
-          knownIdsRef.current.add(alert.id)
-          setAlerts((current) => [...current, alert])
+            knownIdsRef.current.delete(id)
+            if (ackIdsRef.current.delete(id)) {
+              saveAckIds([...ackIdsRef.current])
+            }
+            setAlerts((current) => current.filter((item) => item.id !== id))
+          }
         },
         error: (error: unknown) => {
           console.error('Order alerts listener failed', error)
@@ -237,6 +326,9 @@ function OrderAlertsOverlay() {
   const hasAlerts = alerts.length > 0
 
   const acknowledge = useCallback((id: string) => {
+    ackIdsRef.current.add(id)
+    saveAckIds([...ackIdsRef.current])
+    knownIdsRef.current.add(id)
     setAlerts((current) => current.filter((item) => item.id !== id))
   }, [])
 
@@ -245,7 +337,11 @@ function OrderAlertsOverlay() {
       setBusyAlertIds((current) => ({...current, [alert.id]: true}))
 
       try {
-        await client.patch(alert.id).set({status: 'preparing'}).commit()
+        await client.patch(alert.id).set({status: ORDER_STATUS.preparing}).commit()
+        knownIdsRef.current.delete(alert.id)
+        if (ackIdsRef.current.delete(alert.id)) {
+          saveAckIds([...ackIdsRef.current])
+        }
         setAlerts((current) => current.filter((item) => item.id !== alert.id))
       } catch (error) {
         console.error('Error changing order status to preparing', error)

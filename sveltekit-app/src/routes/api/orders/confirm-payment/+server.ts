@@ -1,15 +1,17 @@
+import { STRIPE_ORDER_METADATA_KEYS } from '@bodega-la-pascuala/contracts';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import Stripe from 'stripe';
 import { RequestError } from '$lib/server/http-error';
-import { getStripeConfig } from '$lib/server/config';
+import { getStripeClientConfig } from '$lib/server/config';
 import {
 	findCheckoutIntent,
 	findOrder,
 	upsertPaidOrderFromCheckoutIntent
 } from '$lib/server/orders/payment-materialization';
+import { enforceRateLimit } from '$lib/server/security/rate-limit';
 
-const stripeConfig = getStripeConfig();
+const stripeConfig = getStripeClientConfig();
 
 const stripe = new Stripe(stripeConfig.stripeSecretKey, {
 	apiVersion: '2026-01-28.clover'
@@ -23,19 +25,22 @@ function readString(value: unknown, path: string): string {
 	return value.trim();
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
+	const { request } = event;
 	try {
+		await enforceRateLimit(event, 'confirm-payment', { limit: 20, windowMs: 60_000 });
+
 		const body = (await request.json()) as Record<string, unknown>;
 		const paymentIntentId = readString(body.paymentIntentId, 'paymentIntentId');
 
 		const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 		const orderPublicId =
-			typeof paymentIntent.metadata?.orderPublicId === 'string'
-				? paymentIntent.metadata.orderPublicId
+			typeof paymentIntent.metadata?.[STRIPE_ORDER_METADATA_KEYS.orderPublicId] === 'string'
+				? paymentIntent.metadata[STRIPE_ORDER_METADATA_KEYS.orderPublicId]
 				: undefined;
 		const checkoutIntentId =
-			typeof paymentIntent.metadata?.checkoutIntentId === 'string'
-				? paymentIntent.metadata.checkoutIntentId
+			typeof paymentIntent.metadata?.[STRIPE_ORDER_METADATA_KEYS.checkoutIntentId] === 'string'
+				? paymentIntent.metadata[STRIPE_ORDER_METADATA_KEYS.checkoutIntentId]
 				: undefined;
 
 		if (paymentIntent.status !== 'succeeded') {
@@ -65,7 +70,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ ok: true, orderAlreadyExists: false });
 	} catch (error) {
 		if (error instanceof RequestError) {
-			return json({ error: error.message, code: error.code }, { status: error.status });
+			return json(
+				{ error: error.message, code: error.code },
+				{ status: error.status, headers: error.headers }
+			);
 		}
 
 		console.error('Error confirming payment intent:', error);

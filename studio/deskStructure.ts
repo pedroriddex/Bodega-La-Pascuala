@@ -1,6 +1,10 @@
+import {CHECKOUT_INTENT_DOCUMENT_TYPE} from '@bodega-la-pascuala/contracts'
 import type {StructureResolver} from 'sanity/structure'
 
 export const singletonTypes = new Set(['storeSettings'])
+export const hiddenDocumentTypes = new Set([CHECKOUT_INTENT_DOCUMENT_TYPE])
+
+const hiddenDeskTypes = new Set([...singletonTypes, ...hiddenDocumentTypes])
 
 export const deskStructure: StructureResolver = (S) =>
   S.list()
@@ -19,6 +23,6 @@ export const deskStructure: StructureResolver = (S) =>
       S.divider(),
       ...S.documentTypeListItems().filter((listItem) => {
         const id = listItem.getId()
-        return id ? !singletonTypes.has(id) : true
+        return id ? !hiddenDeskTypes.has(id) : true
       }),
     ])

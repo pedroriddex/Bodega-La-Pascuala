@@ -1,3 +1,4 @@
+import type { CheckoutCustomerFields, CheckoutDeliveryFields } from '@bodega-la-pascuala/contracts';
 import type { CanonicalOrderItem, OrderStatus } from '$lib/types/order';
 
 export interface SanityImage {
@@ -33,19 +34,9 @@ export interface Drink {
 	image?: SanityImage;
 }
 
-export interface OrderCustomer {
-	firstName: string;
-	lastName: string;
-	email: string;
-	phone: string;
-}
+export type OrderCustomer = CheckoutCustomerFields;
 
-export interface OrderDelivery {
-	method: 'pickup' | 'delivery';
-	address?: string;
-	city?: string;
-	zip?: string;
-}
+export type OrderDelivery = CheckoutDeliveryFields;
 
 export interface Order {
 	_type: 'order';

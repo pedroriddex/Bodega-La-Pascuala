@@ -1,12 +1,12 @@
-export type OrderItemType = 'half' | 'full' | 'drink';
+import type {
+	CanonicalOrderLine,
+	CheckoutCustomerFields,
+	CheckoutDeliveryFields,
+	OrderItemType,
+	OrderStatus
+} from '@bodega-la-pascuala/contracts';
 
-export type OrderStatus =
-	| 'pending_payment'
-	| 'paid'
-	| 'preparing'
-	| 'shipped'
-	| 'completed'
-	| 'cancelled';
+export type { OrderItemType, OrderStatus };
 
 export interface CheckoutItemInput {
 	id: string;
@@ -14,19 +14,9 @@ export interface CheckoutItemInput {
 	quantity: number;
 }
 
-export interface CheckoutCustomerInput {
-	firstName: string;
-	lastName: string;
-	email: string;
-	phone: string;
-}
+export type CheckoutCustomerInput = CheckoutCustomerFields;
 
-export interface CheckoutDeliveryInput {
-	method: 'pickup' | 'delivery';
-	address?: string;
-	city?: string;
-	zip?: string;
-}
+export type CheckoutDeliveryInput = CheckoutDeliveryFields;
 
 export interface CreatePaymentIntentRequest {
 	items: CheckoutItemInput[];
@@ -35,14 +25,7 @@ export interface CreatePaymentIntentRequest {
 	notes?: string;
 }
 
-export interface CanonicalOrderItem {
-	productId: string;
-	name: string;
-	quantity: number;
-	price: number;
-	type: OrderItemType;
-	total: number;
-}
+export type CanonicalOrderItem = CanonicalOrderLine;
 
 export interface CanonicalOrderSummary {
 	items: CanonicalOrderItem[];

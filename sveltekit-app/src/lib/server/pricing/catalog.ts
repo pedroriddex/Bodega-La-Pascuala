@@ -1,3 +1,4 @@
+import { ORDER_ITEM_TYPE } from '@bodega-la-pascuala/contracts';
 import { RequestError } from '$lib/server/http-error';
 import type { CanonicalOrderSummary, CheckoutItemInput, OrderItemType } from '$lib/types/order';
 
@@ -29,7 +30,7 @@ function toEuros(amountCents: number): number {
 }
 
 function getUnitPrice(product: CatalogProduct, itemType: OrderItemType): number {
-	if (itemType === 'drink') {
+	if (itemType === ORDER_ITEM_TYPE.drink) {
 		if (product._type !== 'drink' || typeof product.price !== 'number' || product.price <= 0) {
 			throw new RequestError(
 				400,
@@ -45,7 +46,8 @@ function getUnitPrice(product: CatalogProduct, itemType: OrderItemType): number 
 		throw new RequestError(400, 'invalid_items', `Product ${product._id} is not a sandwich`);
 	}
 
-	const unitPrice = itemType === 'half' ? product.pricing?.halfSize : product.pricing?.fullSize;
+	const unitPrice =
+		itemType === ORDER_ITEM_TYPE.half ? product.pricing?.halfSize : product.pricing?.fullSize;
 	if (typeof unitPrice !== 'number' || unitPrice <= 0) {
 		throw new RequestError(
 			400,

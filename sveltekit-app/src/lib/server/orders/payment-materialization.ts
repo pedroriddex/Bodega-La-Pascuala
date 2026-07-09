@@ -1,3 +1,9 @@
+import {
+	CHECKOUT_INTENT_DOCUMENT_TYPE,
+	CHECKOUT_INTENT_FIELD_NAMES,
+	ORDER_STATUS,
+	type CheckoutIntentDocument
+} from '@bodega-la-pascuala/contracts';
 import { writeClient } from '$lib/server/sanity/client';
 import { createHash } from 'node:crypto';
 import {
@@ -5,29 +11,15 @@ import {
 	getOrderStatusFromPaymentEvent,
 	type PaymentIntentEventType
 } from './utils';
-import type {
-	CanonicalOrderItem,
-	CheckoutCustomerInput,
-	CheckoutDeliveryInput,
-	OrderStatus
-} from '$lib/types/order';
+import type { CanonicalOrderItem, OrderStatus } from '$lib/types/order';
 
 export interface StoredOrder {
 	_id: string;
 	status: OrderStatus;
 }
 
-export interface CheckoutIntent {
+export interface CheckoutIntent extends CheckoutIntentDocument {
 	_id: string;
-	orderPublicId: string;
-	orderNumber?: string;
-	customer: CheckoutCustomerInput;
-	delivery: CheckoutDeliveryInput;
-	items: CanonicalOrderItem[];
-	totalAmount: number;
-	notes?: string;
-	createdAt: string;
-	paymentIntentId?: string;
 }
 
 interface SanityOrderItem extends CanonicalOrderItem {
@@ -45,43 +37,21 @@ const orderByPublicIdQuery = `*[_type == "order" && publicId == $publicId][0]{
   status
 }`;
 
-const checkoutIntentByIdQuery = `*[_type == "checkoutIntent" && _id == $checkoutIntentId][0]{
+const checkoutIntentProjection = CHECKOUT_INTENT_FIELD_NAMES.join(',\n  ');
+
+const checkoutIntentByIdQuery = `*[_type == "${CHECKOUT_INTENT_DOCUMENT_TYPE}" && _id == $checkoutIntentId][0]{
   _id,
-  orderPublicId,
-  orderNumber,
-  customer,
-  delivery,
-  items,
-  totalAmount,
-  notes,
-  createdAt,
-  paymentIntentId
+  ${checkoutIntentProjection}
 }`;
 
-const checkoutIntentByPublicIdQuery = `*[_type == "checkoutIntent" && orderPublicId == $publicId][0]{
+const checkoutIntentByPublicIdQuery = `*[_type == "${CHECKOUT_INTENT_DOCUMENT_TYPE}" && orderPublicId == $publicId][0]{
   _id,
-  orderPublicId,
-  orderNumber,
-  customer,
-  delivery,
-  items,
-  totalAmount,
-  notes,
-  createdAt,
-  paymentIntentId
+  ${checkoutIntentProjection}
 }`;
 
-const checkoutIntentByPaymentIntentQuery = `*[_type == "checkoutIntent" && paymentIntentId == $paymentIntentId][0]{
+const checkoutIntentByPaymentIntentQuery = `*[_type == "${CHECKOUT_INTENT_DOCUMENT_TYPE}" && paymentIntentId == $paymentIntentId][0]{
   _id,
-  orderPublicId,
-  orderNumber,
-  customer,
-  delivery,
-  items,
-  totalAmount,
-  notes,
-  createdAt,
-  paymentIntentId
+  ${checkoutIntentProjection}
 }`;
 
 export async function findOrder(
@@ -158,7 +128,7 @@ export async function upsertPaidOrderFromCheckoutIntent(
 		items: itemsWithKeys,
 		totalAmount: checkoutIntent.totalAmount,
 		notes: checkoutIntent.notes || '',
-		status: 'paid',
+		status: ORDER_STATUS.paid,
 		createdAt,
 		paymentIntentId,
 		stripePaymentId: paymentIntentId
@@ -168,7 +138,7 @@ export async function upsertPaidOrderFromCheckoutIntent(
 		.patch(orderId)
 		.set({
 			items: itemsWithKeys,
-			status: 'paid',
+			status: ORDER_STATUS.paid,
 			paymentIntentId,
 			stripePaymentId: paymentIntentId
 		})

@@ -1,3 +1,4 @@
+import { ORDER_STATUS } from '@bodega-la-pascuala/contracts';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { writeClient } from '$lib/server/sanity/client';
@@ -43,11 +44,11 @@ export const POST: RequestHandler = async ({ params, request }) => {
 		notFound();
 	}
 
-	if (order.status === 'completed') {
-		return json({ ok: true, status: 'completed', updatedAt: order.updatedAt });
+	if (order.status === ORDER_STATUS.completed) {
+		return json({ ok: true, status: ORDER_STATUS.completed, updatedAt: order.updatedAt });
 	}
 
-	if (order.status !== 'shipped') {
+	if (order.status !== ORDER_STATUS.shipped) {
 		return json(
 			{
 				ok: false,
@@ -58,7 +59,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 		);
 	}
 
-	await writeClient.patch(order._id).set({ status: 'completed' }).commit();
+	await writeClient.patch(order._id).set({ status: ORDER_STATUS.completed }).commit();
 
 	const updatedOrder = await writeClient.fetch<StoredOrder | null>(orderQuery, {
 		publicId: params.id
@@ -66,7 +67,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 
 	return json({
 		ok: true,
-		status: updatedOrder?.status ?? 'completed',
+		status: updatedOrder?.status ?? ORDER_STATUS.completed,
 		updatedAt: updatedOrder?.updatedAt ?? new Date().toISOString()
 	});
 };

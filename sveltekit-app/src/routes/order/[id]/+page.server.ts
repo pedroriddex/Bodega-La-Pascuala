@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types';
 import { serverClient } from '$lib/server/sanity/client';
 import { getTrackingConfig } from '$lib/server/config';
 import { verifyTrackingToken } from '$lib/server/security/tracking-token';
+import { reconcilePaidOrder } from '$lib/server/orders/reconcile';
 import type { CanonicalOrderItem, OrderStatus } from '$lib/types/order';
 
 interface TrackingOrder {
@@ -53,9 +54,25 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	}
 
 	try {
-		const order = await serverClient.fetch<TrackingOrder | null>(orderQuery, {
+		let order = await serverClient.fetch<TrackingOrder | null>(orderQuery, {
 			publicId: params.id
 		});
+
+		if (!order) {
+			// The Stripe webhook may not have materialized the order yet (or isn't
+			// configured). Since the tracking token already authenticated this
+			// request, try to promote the paid checkout intent, then re-read.
+			const reconciled = await reconcilePaidOrder(params.id).catch((reconcileError) => {
+				console.error('Error reconciling order from Stripe:', reconcileError);
+				return false;
+			});
+
+			if (reconciled) {
+				order = await serverClient.fetch<TrackingOrder | null>(orderQuery, {
+					publicId: params.id
+				});
+			}
+		}
 
 		if (!order) {
 			notFound();

@@ -38,12 +38,14 @@
 	let deliveryDistanceKm: number | null = null;
 	let lastDeliveryValidationKey: string | null = null;
 	let checkoutStorageReady = false;
+	const publicEnv = env as Record<string, string | undefined>;
 
 	onMount(async () => {
-		const publishableKey = env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+		const publishableKey = publicEnv.PUBLIC_STRIPE_PUBLISHABLE_KEY || publicEnv.PUBLIC_STRIPE_KEY;
 
 		if (!publishableKey) {
-			errorMessage = 'Falta la configuración de pago (PUBLIC_STRIPE_PUBLISHABLE_KEY).';
+			errorMessage =
+				'Falta la configuración de pago (PUBLIC_STRIPE_PUBLISHABLE_KEY / PUBLIC_STRIPE_KEY).';
 			return;
 		}
 
