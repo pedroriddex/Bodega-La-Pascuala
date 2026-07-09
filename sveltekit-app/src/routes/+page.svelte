@@ -117,16 +117,17 @@
 	{/if}
 
 	<div class="md:p-10 md:rounded-lg px-4 py-10">
-		<div class="mb-10 flex items-center justify-center">
+		<div class="mb-10 flex flex-col items-center">
 			<h2
-				class="font-montserrat text-3xl font-black uppercase tracking-tight text-[#214593] text-shadow-[4px_4px_0px_#FABE40] text-center"
+				class="font-montserrat text-4xl font-black uppercase tracking-tight text-brand-blue text-center"
 			>
 				Bocadillos
 			</h2>
+			<span class="mt-3 h-1.5 w-16 rounded-full bg-brand-yellow"></span>
 		</div>
 
 		{#if sandwiches && sandwiches.length}
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
+			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
 				{#each sandwiches as sandwich (sandwich._id)}
 					<ProductCard product={sandwich} />
 				{/each}
@@ -137,12 +138,15 @@
 	<div>
 		{#if drinks && drinks.length}
 			<div class="md:p-10 md:rounded-lg px-4 py-10">
-				<h2
-					class="mb-10 font-montserrat text-3xl font-black uppercase tracking-tight text-[#214593] text-shadow-[4px_4px_0px_#FABE40] text-center"
-				>
-					Bebidas
-				</h2>
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
+				<div class="mb-10 flex flex-col items-center">
+					<h2
+						class="font-montserrat text-4xl font-black uppercase tracking-tight text-brand-blue text-center"
+					>
+						Bebidas
+					</h2>
+					<span class="mt-3 h-1.5 w-16 rounded-full bg-brand-yellow"></span>
+				</div>
+				<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
 					{#each drinks as drink (drink._id)}
 						<DrinkCard product={drink} />
 					{/each}

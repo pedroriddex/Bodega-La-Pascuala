@@ -127,7 +127,7 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-50 py-12 px-4">
+<div class="min-h-screen bg-brand-cream py-12 px-4">
 	<div class="max-w-3xl mx-auto">
 		<div class="mb-8 text-center">
 			<h1 class="text-3xl font-bold text-[#214593] uppercase tracking-tight mb-2">
@@ -243,7 +243,9 @@
 
 				<div class="border-t border-gray-100 pt-4 flex justify-between items-center">
 					<span class="text-lg font-bold text-gray-800">Total Pagado</span>
-					<span class="text-2xl font-bold text-[#FABE40]">{order.totalAmount.toFixed(2)}€</span>
+					<span class="text-2xl font-extrabold text-brand-blue"
+						>{order.totalAmount.toFixed(2)}€</span
+					>
 				</div>
 
 				<div class="mt-6 pt-6 border-t border-gray-100 grid md:grid-cols-2 gap-6 text-sm">

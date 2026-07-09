@@ -1,4 +1,23 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/*
+ * Design tokens. Tailwind v4 is CSS-first: the legacy tailwind.config.js is not
+ * loaded without an @config directive, so the brand palette and font live here.
+ * This activates `bg-brand-blue`, `text-brand-yellow`, `font-montserrat`, etc.
+ * and makes Montserrat the default sans across the whole app.
+ */
+@theme {
+	--color-brand-blue: #214593;
+	--color-brand-blue-dark: #1a3876;
+	--color-brand-yellow: #fabe40;
+	--color-brand-yellow-dark: #e5a92e;
+	--color-brand-cream: #fffaf0;
+	--color-primary: #214593;
+	--color-secondary: #fabe40;
+	--font-sans: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--font-montserrat: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
 
 @layer components {
 	.card-shadow {
@@ -8,6 +27,22 @@
 	.card-hover {
 		@apply hover:scale-105 transition-transform duration-300;
 	}
+}
+
+/* Subtle entrance used by the checkout steps. */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.animate-fade-in {
+	animation: fade-in 0.3s ease-out both;
 }
 
 :global {

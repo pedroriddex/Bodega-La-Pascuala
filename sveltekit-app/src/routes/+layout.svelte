@@ -17,7 +17,7 @@
 	</a>
 {/if}
 
-<div class="flex h-full min-h-screen flex-col bg-white text-brand-blue antialiased font-sans">
+<div class="flex h-full min-h-screen flex-col bg-brand-cream text-brand-blue antialiased font-sans">
 	{#if $isPreviewing}
 		<a href={`/preview/disable?redirect=${$page.url.pathname}`} class="preview-toggle">
 			<span>Preview Enabled</span>

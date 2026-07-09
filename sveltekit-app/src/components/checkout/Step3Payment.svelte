@@ -18,10 +18,13 @@
 		></textarea>
 	</div>
 
-	<div class="bg-linear-to-br from-white to-gray-50 p rounded-2xl">
+	<div
+		class="rounded-2xl border border-gray-100 bg-linear-to-br from-white to-gray-50 p-5 shadow-sm"
+	>
 		<div class="flex items-center gap-3 mb-6">
-			<div class="h-8 w-1 bg-brand-blue rounded-full"></div>
-			<h3 class="font-bold text-gray-900 text-lg">Pago Seguro</h3>
+			<div class="h-6 w-1.5 bg-brand-yellow rounded-full"></div>
+			<h3 class="font-extrabold text-brand-blue text-lg">Pago seguro</h3>
+			<i class="ri-lock-2-fill ml-auto text-brand-blue/40"></i>
 		</div>
 		<!-- Stripe Element Container -->
 		<div id="payment-element" class="min-h-[200px] bg-white rounded-xl p-1"></div>

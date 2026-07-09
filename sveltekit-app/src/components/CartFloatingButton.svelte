@@ -6,19 +6,28 @@
 
 {#if $cartCount > 0}
 	<div
-		class="fixed bottom-0 md:bottom-4 md:right-4 z-50 w-full md:w-auto"
-		transition:fly={{ y: 20, duration: 300, easing: cubicOut }}
+		class="fixed bottom-0 z-50 w-full px-3 pb-3 md:bottom-5 md:right-5 md:left-auto md:w-auto md:p-0"
+		transition:fly={{ y: 24, duration: 300, easing: cubicOut }}
 	>
 		<a
 			href="/checkout"
-			class="group flex items-center justify-center gap-3 bg-[#214593] text-white md:rounded-full rounded-tl-lg rounded-tr-lg pl-6 pr-2 md:pr-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 ring-2 ring-white/50 no-underline"
+			class="group flex items-center justify-between gap-4 rounded-2xl bg-brand-blue px-4 py-3.5 text-white no-underline shadow-2xl ring-1 ring-white/10 transition-all duration-300 hover:brightness-110 md:rounded-full md:px-5"
 		>
-			<span class="text-lg font-bold tracking-wide uppercase">Hacer pedido</span>
-			<div
-				class="bg-white text-[#214593] font-bold px-3 py-1.5 rounded-full min-w-[3rem] text-center shadow-sm group-hover:bg-[#214593] group-hover:text-white transition-colors"
-			>
+			<span class="flex items-center gap-3">
+				<span class="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
+					<i class="ri-shopping-basket-2-fill text-xl"></i>
+					<span
+						class="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-yellow px-1 text-xs font-extrabold text-brand-blue"
+					>
+						{$cartCount}
+					</span>
+				</span>
+				<span class="text-base font-extrabold uppercase tracking-wide md:text-lg">Hacer pedido</span
+				>
+			</span>
+			<span class="rounded-full bg-white px-4 py-1.5 font-extrabold text-brand-blue shadow-sm">
 				{$cartTotal.toFixed(2)}€
-			</div>
+			</span>
 		</a>
 	</div>
 {/if}
