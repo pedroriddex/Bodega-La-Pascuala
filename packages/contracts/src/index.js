@@ -29,6 +29,24 @@ export const PAYMENT_INTENT_EVENT_VALUES = Object.freeze(
   Object.values(PAYMENT_INTENT_EVENT),
 )
 
+/**
+ * Shipday delivery events received on the inbound status webhook.
+ * Note: `ORDER_PIKEDUP` is Shipday's own spelling, kept verbatim on purpose.
+ */
+export const SHIPDAY_EVENT = Object.freeze({
+  orderAssigned: 'ORDER_ASSIGNED',
+  orderAcceptedAndStarted: 'ORDER_ACCEPTED_AND_STARTED',
+  orderPickedUp: 'ORDER_PIKEDUP',
+  orderOnTheWay: 'ORDER_ONTHEWAY',
+  orderCompleted: 'ORDER_COMPLETED',
+  orderFailed: 'ORDER_FAILED',
+  orderIncomplete: 'ORDER_INCOMPLETE',
+})
+
+export const SHIPDAY_EVENT_VALUES = Object.freeze(Object.values(SHIPDAY_EVENT))
+
+export const SHIPDAY_API_BASE_URL = 'https://api.shipday.com'
+
 export const CHECKOUT_INTENT_DOCUMENT_TYPE = 'checkoutIntent'
 export const CHECKOUT_INTENT_ID_PREFIX = 'checkoutIntent-'
 export const DEFAULT_SANITY_API_VERSION = '2024-03-15'
@@ -67,6 +85,9 @@ export const MONOREPO_ENV_MATRIX = Object.freeze({
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET',
       'TRACKING_TOKEN_SECRET',
+      'SHIPDAY_API_KEY',
+      'SHIPDAY_WEBHOOK_TOKEN',
+      'SANITY_WEBHOOK_SECRET',
     ]),
   }),
   studio: Object.freeze({
@@ -91,6 +112,9 @@ export const CHECK_COMMAND_ENV_DEFAULTS = Object.freeze({
   STRIPE_SECRET_KEY: 'sk_test_placeholder',
   STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
   TRACKING_TOKEN_SECRET: 'tracking-token-secret-placeholder',
+  SHIPDAY_API_KEY: '',
+  SHIPDAY_WEBHOOK_TOKEN: '',
+  SANITY_WEBHOOK_SECRET: '',
   SANITY_STUDIO_PROJECT_ID: 'demo-project',
   SANITY_STUDIO_DATASET: 'production',
   SANITY_STUDIO_PREVIEW_URL: DEFAULT_STUDIO_PREVIEW_URL,

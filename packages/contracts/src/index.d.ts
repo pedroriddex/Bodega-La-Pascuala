@@ -34,6 +34,27 @@ export type PaymentIntentEventType =
   | 'payment_intent.payment_failed'
   | 'payment_intent.canceled'
 
+export const SHIPDAY_EVENT: Readonly<{
+  orderAssigned: 'ORDER_ASSIGNED'
+  orderAcceptedAndStarted: 'ORDER_ACCEPTED_AND_STARTED'
+  orderPickedUp: 'ORDER_PIKEDUP'
+  orderOnTheWay: 'ORDER_ONTHEWAY'
+  orderCompleted: 'ORDER_COMPLETED'
+  orderFailed: 'ORDER_FAILED'
+  orderIncomplete: 'ORDER_INCOMPLETE'
+}>
+export const SHIPDAY_EVENT_VALUES: readonly ShipdayEventType[]
+export type ShipdayEventType =
+  | 'ORDER_ASSIGNED'
+  | 'ORDER_ACCEPTED_AND_STARTED'
+  | 'ORDER_PIKEDUP'
+  | 'ORDER_ONTHEWAY'
+  | 'ORDER_COMPLETED'
+  | 'ORDER_FAILED'
+  | 'ORDER_INCOMPLETE'
+
+export const SHIPDAY_API_BASE_URL: 'https://api.shipday.com'
+
 export const CHECKOUT_INTENT_DOCUMENT_TYPE: 'checkoutIntent'
 export const CHECKOUT_INTENT_ID_PREFIX: 'checkoutIntent-'
 export const DEFAULT_SANITY_API_VERSION: '2024-03-15'

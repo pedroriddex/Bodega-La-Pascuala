@@ -38,6 +38,9 @@ Variables privadas:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `TRACKING_TOKEN_SECRET`
+- `SHIPDAY_API_KEY` (opcional: activa el reparto con Shipday)
+- `SHIPDAY_WEBHOOK_TOKEN` (opcional: valida el webhook entrante de Shipday)
+- `SANITY_WEBHOOK_SECRET` (opcional: valida el webhook de Sanity que dispara el reparto)
 
 ### Studio (`/Users/pedrojose/Trabajo/Bodega-La-Pascuala/studio/.env`)
 
@@ -149,6 +152,43 @@ Configurar en Stripe:
   - `payment_intent.canceled`
 
 Guardar el signing secret en `STRIPE_WEBHOOK_SECRET`.
+
+## Integración con Shipday (reparto)
+
+Gestiona el reparto a domicilio: los pedidos de **envío** se despachan a Shipday y el repartidor actualiza el estado desde su app. **Solo se activa si `SHIPDAY_API_KEY` está definida**; sin ella la integración queda inactiva y no afecta al flujo de pedidos.
+
+### Flujo
+
+1. Cocina pasa un pedido de envío a **`preparing`** en el Studio.
+2. Un **webhook de Sanity** llama a `POST /api/shipday/dispatch`.
+3. El endpoint recarga el pedido desde Sanity, valida que sea de envío y esté en `preparing`, y crea la entrega en Shipday (`POST https://api.shipday.com/orders`).
+4. El `orderId` devuelto se guarda en el campo `shipdayOrderId` del pedido (idempotente: si ya existe, no se vuelve a despachar).
+5. El repartidor actualiza el estado en su app y Shipday llama a `POST /api/shipday/webhook`, que refleja el cambio en el pedido:
+   - `ORDER_ONTHEWAY` / `ORDER_PIKEDUP` → `shipped`
+   - `ORDER_COMPLETED` → `completed`
+
+Las transiciones son **solo hacia adelante**: un evento tardío nunca retrocede un pedido, y `ORDER_FAILED` no cambia el estado (requiere decisión humana). Los pedidos de **recogida en local** nunca se envían a Shipday.
+
+### Configurar el webhook de Sanity (dispara el reparto)
+
+En [sanity.io/manage](https://sanity.io/manage) → proyecto → **API → Webhooks → Create webhook**:
+
+- **URL**: `https://<tu-dominio>/api/shipday/dispatch`
+- **Dataset**: `production`
+- **Trigger on**: `Create` y `Update`
+- **Filter**: `_type == "order" && status == "preparing" && delivery.method == "delivery"`
+- **Projection**: `{_id, publicId}`
+- **HTTP method**: `POST`
+- **HTTP Headers**: `x-webhook-secret` con el valor de `SANITY_WEBHOOK_SECRET`
+
+### Configurar el webhook de Shipday (recibe estados)
+
+En el panel de Shipday → **Settings → Webhooks**:
+
+- **URL**: `https://<tu-dominio>/api/shipday/webhook`
+- **Token**: el valor de `SHIPDAY_WEBHOOK_TOKEN` (Shipday lo envía en la cabecera `token`)
+
+La API key se obtiene en **My Account → API Keys** y se guarda en `SHIPDAY_API_KEY`. La autenticación es `Authorization: Basic <API_KEY>` (clave en crudo, sin base64).
 
 ## Deuda diferida explícita
 

@@ -214,6 +214,14 @@ export default defineType({
       readOnly: true,
     }),
     defineField({
+      name: 'shipdayOrderId',
+      title: 'Shipday Order ID',
+      description:
+        'Identificador de la entrega en Shipday. Se rellena solo al pasar el pedido de envío a preparación.',
+      type: 'number',
+      readOnly: true,
+    }),
+    defineField({
       name: 'createdAt',
       title: 'Fecha de Creación',
       type: 'datetime',

@@ -26,10 +26,25 @@ interface TrackingConfig {
 	trackingTokenTtlMs: number;
 }
 
+/**
+ * Shipday is optional: when the credentials are absent the delivery dispatch
+ * integration simply stays dormant instead of breaking the ordering flow.
+ */
+interface ShipdayConfig {
+	shipdayApiKey?: string;
+	shipdayWebhookToken?: string;
+}
+
+interface SanityWebhookConfig {
+	sanityWebhookSecret?: string;
+}
+
 let sanityCache: SanityConfig | null = null;
 let stripeClientCache: StripeClientConfig | null = null;
 let stripeWebhookCache: StripeWebhookConfig | null = null;
 let trackingCache: TrackingConfig | null = null;
+let shipdayCache: ShipdayConfig | null = null;
+let sanityWebhookCache: SanityWebhookConfig | null = null;
 
 export function getSanityConfig(): SanityConfig {
 	if (!sanityCache) {
@@ -71,4 +86,25 @@ export function getTrackingConfig(): TrackingConfig {
 	}
 
 	return trackingCache;
+}
+
+export function getShipdayConfig(): ShipdayConfig {
+	if (!shipdayCache) {
+		shipdayCache = {
+			shipdayApiKey: env.SHIPDAY_API_KEY?.trim() || undefined,
+			shipdayWebhookToken: env.SHIPDAY_WEBHOOK_TOKEN?.trim() || undefined
+		};
+	}
+
+	return shipdayCache;
+}
+
+export function getSanityWebhookConfig(): SanityWebhookConfig {
+	if (!sanityWebhookCache) {
+		sanityWebhookCache = {
+			sanityWebhookSecret: env.SANITY_WEBHOOK_SECRET?.trim() || undefined
+		};
+	}
+
+	return sanityWebhookCache;
 }
