@@ -86,7 +86,13 @@ function runTests(env) {
   )
   runRootNode(
     'Run monorepo contract tests',
-    ['--import', 'tsx', '--test', 'tests/contracts.test.ts'],
+    [
+      '--import',
+      'tsx',
+      '--test',
+      'tests/contracts.test.ts',
+      'tests/lockfile.test.ts',
+    ],
     env,
   )
 }
