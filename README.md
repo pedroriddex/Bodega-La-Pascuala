@@ -153,6 +153,36 @@ Configurar en Stripe:
 
 Guardar el signing secret en `STRIPE_WEBHOOK_SECRET`.
 
+> **Test y live son entornos separados en Stripe.** Las claves, los webhooks y sus secretos no se comparten entre ambos: al pasar a producción hay que crear el webhook otra vez en modo live.
+
+## Puesta en producción con cobros reales (modo live)
+
+Checklist para pasar de pagos de prueba a cobros reales.
+
+1. **Activar la cuenta de Stripe.** En el dashboard, completar los datos del negocio, la información fiscal y la cuenta bancaria de ingreso. Sin la cuenta activada, las claves live no funcionan.
+
+2. **Crear el webhook en modo live.** Con el selector del dashboard en **Live** (no Test): Developers → Webhooks → _Add endpoint_.
+
+   - URL: `https://pedidos.bodegalapascuala.es/api/stripe/webhook`
+   - Eventos: `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.canceled`
+   - Copiar el _signing secret_ (`whsec_...`) que aparece tras crearlo.
+
+3. **Actualizar las variables en Vercel** (proyecto del storefront, entorno Production):
+
+   | Variable                        | Valor                     |
+   | ------------------------------- | ------------------------- |
+   | `STRIPE_SECRET_KEY`             | `sk_live_...`             |
+   | `PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...`             |
+   | `STRIPE_WEBHOOK_SECRET`         | el `whsec_...` del paso 2 |
+
+4. **Redesplegar.** Vercel no inyecta variables nuevas en un build ya construido.
+
+5. **Verificar.** Hacer un pedido real de importe pequeño, comprobar que aparece en Stripe y que el pedido se materializa en el Studio, y reembolsarlo desde el dashboard.
+
+> **El entorno local se queda en modo test.** Las claves live viven solo en Vercel: así una prueba desde el equipo de desarrollo nunca genera un cobro real.
+
+> Cambiar la URL de un webhook existente en Stripe **conserva su signing secret**, así que se puede crear apuntando a una URL provisional y actualizarla después sin tocar `STRIPE_WEBHOOK_SECRET`.
+
 ## Integración con Shipday (reparto)
 
 Gestiona el reparto a domicilio: los pedidos de **envío** se despachan a Shipday y el repartidor actualiza el estado desde su app. **Solo se activa si `SHIPDAY_API_KEY` está definida**; sin ella la integración queda inactiva y no afecta al flujo de pedidos.
