@@ -16,6 +16,11 @@
 			: null;
 </script>
 
+<svelte:head>
+	<title>Pedido confirmado · Bodega La Pascuala</title>
+	<meta property="og:title" content="Pedido confirmado · Bodega La Pascuala" />
+</svelte:head>
+
 <div class="min-h-[70vh] flex flex-col items-center justify-center p-4 text-center">
 	<div in:scale class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
 		<i class="ri-check-line text-5xl text-green-600"></i>

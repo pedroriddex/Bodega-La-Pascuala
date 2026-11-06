@@ -127,6 +127,11 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Seguimiento del pedido · Bodega La Pascuala</title>
+	<meta property="og:title" content="Seguimiento del pedido · Bodega La Pascuala" />
+</svelte:head>
+
 <div class="min-h-screen bg-brand-cream py-12 px-4">
 	<div class="max-w-3xl mx-auto">
 		<div class="mb-8 text-center">

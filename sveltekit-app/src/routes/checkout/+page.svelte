@@ -406,6 +406,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Confirmar pedido · Bodega La Pascuala</title>
+	<meta property="og:title" content="Confirmar pedido · Bodega La Pascuala" />
+</svelte:head>
+
 <div class="container mx-auto px-0 py-0 pb-32 max-w-2xl">
 	<header class="mb-8 flex items-center gap-4 px-4 mt-4">
 		{#if step === 0}

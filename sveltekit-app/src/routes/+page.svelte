@@ -57,6 +57,11 @@
 		.filter((entry): entry is FavoriteEntry => entry !== null);
 </script>
 
+<svelte:head>
+	<title>Bodega La Pascuala · Pedidos online</title>
+	<meta property="og:title" content="Bodega La Pascuala · Pedidos online" />
+</svelte:head>
+
 <div class="container mx-auto md:px-4 md:py-8 md:pb-24">
 	{#if favoriteEntries.length > 0}
 		<section class="md:rounded-lg border border-[#f1ddac] bg-[#fff8e8] px-4 py-8 md:p-10">
