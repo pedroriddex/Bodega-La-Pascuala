@@ -2,6 +2,8 @@ import {ORDER_STATUS} from '@bodega-la-pascuala/contracts'
 import {useCallback, useEffect, useMemo, useRef, useState, type CSSProperties} from 'react'
 import {useClient, type LayoutProps} from 'sanity'
 
+import {KitchenPrinterAgent} from './kitchenPrinter/KitchenPrinterAgent'
+
 type DeliveryMethod = 'pickup' | 'delivery' | string
 
 interface OrderAlertDoc {
@@ -413,6 +415,7 @@ export function OrderAlertsLayout(props: LayoutProps) {
     <>
       {props.renderDefault(props)}
       <OrderAlertsOverlay />
+      <KitchenPrinterAgent />
     </>
   )
 }

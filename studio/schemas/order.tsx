@@ -222,6 +222,23 @@ export default defineType({
       readOnly: true,
     }),
     defineField({
+      name: 'printedAt',
+      title: 'Comanda impresa',
+      description:
+        'Cuándo se imprimió la comanda en cocina. Usa "Reimprimir comanda" en Acciones rápidas para volver a sacarla.',
+      type: 'datetime',
+      readOnly: true,
+    }),
+    defineField({
+      // Set by "Reimprimir comanda" so the kitchen PC prints the order again even
+      // if it predates the moment printing was turned on there.
+      name: 'reprintRequestedAt',
+      title: 'Reimpresión solicitada',
+      type: 'datetime',
+      readOnly: true,
+      hidden: true,
+    }),
+    defineField({
       name: 'createdAt',
       title: 'Fecha de Creación',
       type: 'datetime',

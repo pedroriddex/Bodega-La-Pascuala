@@ -4,6 +4,7 @@ import {presentationTool} from 'sanity/presentation'
 import {structureTool} from 'sanity/structure'
 import {DEFAULT_STUDIO_PREVIEW_URL} from '@bodega-la-pascuala/contracts'
 
+import {kitchenPrinterTool} from './components/kitchenPrinter/KitchenPrinterTool'
 import {OrderAlertsLayout} from './components/OrderAlertsLayout'
 import {deskStructure, hiddenDocumentTypes, singletonTypes} from './deskStructure'
 import {schemaTypes} from './schemas'
@@ -36,6 +37,7 @@ export default defineConfig({
     }),
     ...(isDev ? [visionTool()] : []),
   ],
+  tools: (prev) => [...prev, kitchenPrinterTool],
   schema: {
     types: schemaTypes,
   },

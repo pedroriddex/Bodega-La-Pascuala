@@ -33,6 +33,16 @@ function canTransition(current: OrderStatus, target: OrderStatus): boolean {
   return targetRank > currentRank
 }
 
+function formatTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleTimeString('es-ES', {
+    timeZone: 'Europe/Madrid',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 function toPublishedId(value: string | undefined): string | null {
   if (!value) return null
   return value.startsWith('drafts.') ? value.slice('drafts.'.length) : value
@@ -42,10 +52,34 @@ export function QuickStatusActionsInput(_props: StringInputProps) {
   const client = useClient({apiVersion: '2024-03-15'})
   const documentId = useFormValue(['_id']) as string | undefined
   const currentStatus = (useFormValue(['status']) as OrderStatus | undefined) || ORDER_STATUS.paid
+  const printedAt = useFormValue(['printedAt']) as string | undefined
+  const reprintRequestedAt = useFormValue(['reprintRequestedAt']) as string | undefined
   const [busyStatus, setBusyStatus] = useState<OrderStatus | null>(null)
+  const [reprinting, setReprinting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   const publishedId = useMemo(() => toPublishedId(documentId), [documentId])
+
+  // Clearing printedAt puts the order back in the kitchen PC's print queue, so
+  // the ticket comes out on the kitchen printer whichever device asks for it.
+  const requestReprint = async () => {
+    if (!publishedId) return
+    setReprinting(true)
+    setErrorMessage('')
+
+    try {
+      await client
+        .patch(publishedId)
+        .unset(['printedAt'])
+        .set({reprintRequestedAt: new Date().toISOString()})
+        .commit()
+    } catch (error) {
+      console.error('Error requesting kitchen ticket reprint', error)
+      setErrorMessage('No se pudo pedir la reimpresión. Inténtalo de nuevo.')
+    } finally {
+      setReprinting(false)
+    }
+  }
 
   const updateStatus = async (nextStatus: OrderStatus) => {
     if (!publishedId) return
@@ -123,6 +157,29 @@ export function QuickStatusActionsInput(_props: StringInputProps) {
         })}
       </div>
 
+      <div style={styles.printRow}>
+        <button
+          type="button"
+          onClick={requestReprint}
+          disabled={reprinting || Boolean(reprintRequestedAt && !printedAt)}
+          style={{
+            ...styles.button,
+            background: '#ffffff',
+            color: '#214593',
+            borderColor: '#214593',
+          }}
+        >
+          {reprinting ? 'Enviando...' : 'Reimprimir comanda'}
+        </button>
+        <span style={styles.helper}>
+          {printedAt
+            ? `Comanda impresa a las ${formatTime(printedAt)}`
+            : reprintRequestedAt
+              ? 'Reimpresión pendiente: saldrá en la impresora de cocina'
+              : 'Comanda sin imprimir'}
+        </span>
+      </div>
+
       {errorMessage ? <p style={styles.error}>{errorMessage}</p> : null}
     </div>
   )
@@ -163,6 +220,14 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 700,
     cursor: 'pointer',
     fontSize: 12,
+  },
+  printRow: {
+    display: 'flex',
+    gap: 10,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    borderTop: '1px solid #e5e7eb',
+    paddingTop: 10,
   },
   helper: {
     fontSize: 12,

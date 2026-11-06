@@ -42,6 +42,8 @@ test('order schema keeps the materialized order shape', () => {
     'paymentIntentId',
     'stripePaymentId',
     'shipdayOrderId',
+    'printedAt',
+    'reprintRequestedAt',
     'createdAt',
   ])
 })
